@@ -27,7 +27,7 @@ packages/skeleton-core/
 │   ├── plugin/
 │   │   ├── types.ts          # CalcInput, CalcOutput, Invariant, CalcPluginDef, InvariantReport
 │   │   ├── defineCalcPlugin.ts   # defineCalcPlugin identity function
-│   │   └── runInvariants.ts  # runInvariants (imports fast-check at RUNTIME — see note)
+│   │   └── runInvariants.ts  # REMOVED — moved to src-test-utils/
 │   ├── drill/
 │   │   ├── types.ts          # CodeTrailDef
 │   │   └── defineCodeTrail.ts    # defineCodeTrail identity function
@@ -72,7 +72,7 @@ packages/skeleton-core/
 
 ### Build tooling
 
-The package is built with **tsc only** (`tsconfig.json` with `"moduleResolution": "bundler"`, `"module": "NodeNext"`, `"declaration": true`, `"declarationMap": true`, `"outDir": "dist"`). No bundler is needed for a pure-TS library consumed via npm workspaces. A separate `tsconfig.test-utils.json` compiles `src-test-utils/` to `dist-test-utils/`.
+The package is built with **tsc only** (`tsconfig.json` with `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`, `"declaration": true`, `"declarationMap": true`, `"outDir": "dist"`). No bundler is needed for a pure-TS library consumed via npm workspaces. A separate `tsconfig.test-utils.json` compiles `src-test-utils/` to `dist-test-utils/`.
 
 ---
 
@@ -138,10 +138,22 @@ Each leg is validated as a sequence of `TrailStep` values. The validator walks t
 
 | Path kind | Required first step | Allowed subsequent steps | May end at |
 |---|---|---|---|
-| **Main chapters 1–8** | `"chapter"` | `article` → optional `part` → one or more of `section` / `table` → optional `notes` | `section`, `table`, `notes` |
-| **Chapter 9** | `"chapter"` whose `value` starts with `"9"` | `table` → optional `notes`. No `article`, `part`, or `section`. | `table`, `notes` |
+| **Main chapters 1–8** | `"chapter"` whose `extractFirstNumber(value)` is 1–8 (or null — validation failure) | `article` → optional `part` → one or more of `section` / `table` → optional `notes` | `section`, `table`, `notes` |
+| **Chapter 9** | `"chapter"` whose `extractFirstNumber(value) === 9` | `table` → optional `notes`. No `article`, `part`, or `section`. | `table`, `notes` |
 | **Annex** | `"annex"` | `table` → optional `notes` | `table`, `notes` |
-| **Article 90 intro** | `"article"` whose `value` starts with `"90"` | `section` → optional `notes` | `section`, `notes` |
+| **Article 90 intro** | `"article"` whose `extractFirstNumber(value) === 90` | `section` → optional `notes` | `section`, `notes` |
+
+#### extractFirstNumber helper
+
+```typescript
+// src/trail/validate.ts (also exported from src/index.ts)
+export function extractFirstNumber(s: string): number | null {
+  const m = s.match(/\d+/);
+  return m ? Number(m[0]) : null;
+}
+```
+
+Explanation: scans `s` for the first contiguous run of ASCII digit characters and returns it as a `number`. Returns `null` when no digits are present. Only the first run is used; any later digit runs are ignored. Used by `validateCodeTrail` to identify chapter and article numbers from step values without relying on string-prefix matching.
 
 The path kind is determined by inspecting the first step. Unknown first steps are a validation failure.
 
@@ -201,22 +213,29 @@ export type DrillDef = {
 #### gradeTrail signature
 
 ```typescript
+export type UserPick = {
+  readonly level: TrailLevel;
+  readonly value: string;
+};
+
 export function gradeTrail(
   drill: DrillDef,
-  picks: readonly string[]
+  picks: readonly UserPick[]
 ): GradeResult
 ```
 
 #### Algorithm
 
-1. For each `CodeTrail` in `drill.trails`, flatten the trail's steps from all legs into a single ordered array of `{ level, value }`.
-2. Compare each pick to the corresponding step value using case-insensitive trimmed comparison. Special handling: if the step level is `"part"` and the trail has no `"part"` step, then both `NO_PARTS` and an omitted pick (empty string / undefined) are treated as correct.
-3. If all steps match for any single trail, return `{ matched: true, matchedMovedFrom: false, stepResults: [...] }`.
-4. If no trail matches and `drill.movedFrom` is present, repeat the comparison against `movedFrom`. If it matches, return `{ matched: false, matchedMovedFrom: true, stepResults: [...] }`.
-5. If nothing matches, return `{ matched: false, matchedMovedFrom: false, stepResults: [...] }`.
-6. `stepResults` is computed against the trail that best matched (most steps correct). Unmatched positions carry `verdict: "incorrect"`. Positions beyond the picks array carry `verdict: "unanswered"`.
-
-The function reads no module-level mutable state and writes no module-level mutable state.
+1. For each `CodeTrail` in `drill.trails`, flatten all legs into a single ordered array of `TrailStep` values.
+2. Before aligning, strip any pick from the picks array whose `level` is `"part"` and whose `value` equals `NO_PARTS`, but only when the flattened trail contains no step with level `"part"`. This keeps subsequent picks correctly index-aligned without requiring the UI to reindex.
+3. Compare each remaining pick to the corresponding flattened step by index. A pick matches a step when `pick.level === step.level` AND the trimmed, lowercased `pick.value` equals the trimmed, lowercased `step.value`.
+4. A pick whose `level` does not match the step's `level` at that index is `"incorrect"` (level mismatch counts as wrong).
+5. If the trail does have a `"part"` step and the user submits a pick `{ level: "part", value: NO_PARTS }` at that index, that pick is `"incorrect"`.
+6. If all steps match for any single trail after the strip-and-align process, return `{ matched: true, matchedMovedFrom: false, stepResults: [...] }`.
+7. If no trail matches and `drill.movedFrom` is present, repeat steps 1–5 against `movedFrom`. If it matches, return `{ matched: false, matchedMovedFrom: true, stepResults: [...] }`.
+8. If nothing matches, return `{ matched: false, matchedMovedFrom: false, stepResults: [...] }`.
+9. `stepResults` is computed against the trail that best matched (most steps correct). Unmatched positions carry `verdict: "incorrect"`. Positions beyond the picks array carry `verdict: "unanswered"`.
+10. The function reads no module-level mutable state and writes no module-level mutable state.
 
 ---
 
@@ -445,9 +464,9 @@ export function createRegistry(): PluginRegistry {
 export type { TrailLevel, TrailStep, TrailLeg, CodeTrail } from "./trail/types.js";
 export { ALLOWED_LEVELS } from "./trail/types.js";
 export type { ValidationFailure, ValidationResult } from "./trail/validate.js";
-export { validateCodeTrail } from "./trail/validate.js";
+export { validateCodeTrail, extractFirstNumber } from "./trail/validate.js";
 export { NO_PARTS } from "./trail/grade.js";
-export type { TrailVerdict, StepResult, GradeResult, DrillDef } from "./trail/grade.js";
+export type { TrailVerdict, StepResult, GradeResult, DrillDef, UserPick } from "./trail/grade.js";
 export { gradeTrail } from "./trail/grade.js";
 
 // Plugin
@@ -478,9 +497,9 @@ The per-leg validator is a minimal state machine. Each state represents "which l
 
 ```
 State S0 (initial):
-  chapter    → S1_main (or S1_ch9 if value starts with "9")
+  chapter    → S1_main (or S1_ch9 if extractFirstNumber(value) === 9)
   annex      → S2_annex
-  article    → S3_art90 (only if value starts with "90")
+  article    → S3_art90 (only if extractFirstNumber(value) === 90)
   otherwise  → FAIL
 
 State S1_main (after chapter, chapters 1–8):
@@ -538,7 +557,7 @@ State S6_art90:
 
 ### GradeResult computation
 
-User picks are aligned to a **flattened step sequence**. Flattening: for each leg in order, append each step in order. The resulting `(level, expected-value)` pairs are matched against the picks array by index. Part-step handling (NO_PARTS / omission) is applied only at the index of a step whose level is `"part"`. When the trail has no `"part"` step, the flattened sequence has no part position — but if the user submits a pick at the conventional "part slot," the UI is responsible for not including that pick in the array passed to `gradeTrail`.
+User picks are aligned to a **flattened step sequence**. Flattening: for each leg in order, append each step in order. Each pick is a `{ level, value }` object. Before alignment, `gradeTrail` strips any `{ level: "part", value: NO_PARTS }` picks from the picks array when the flattened trail contains no `"part"` step, so subsequent picks remain correctly index-aligned. Matching then proceeds index-by-index: a pick matches its step when `level` values are equal and `value` strings are equal after trimming and lowercasing. A `level` mismatch at any index is `"incorrect"`.
 
 ---
 
@@ -639,6 +658,16 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 *For any* `CalcPluginDef` and any input value `i`, calling `plugin.calculate(i)` twice with the same input SHALL return outputs that are recursively deeply equal.
 
 **Validates: Requirements 4.2, 4.4**
+
+---
+
+### Property 13: extractFirstNumber correctness
+
+(a) *For any* string composed entirely of ASCII digit characters representing a number N, `extractFirstNumber` SHALL return N.
+(b) *For any* string containing no ASCII digit characters, `extractFirstNumber` SHALL return `null`.
+(c) *For any* string containing two or more digit runs separated by at least one non-digit character, `extractFirstNumber` SHALL return the value of the first run only.
+
+**Validates: Requirements 1.11, 1.13**
 
 ---
 
