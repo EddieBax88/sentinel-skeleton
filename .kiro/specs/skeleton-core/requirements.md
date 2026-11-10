@@ -7,12 +7,18 @@
 ## Glossary
 
 - **Core**: The `packages/skeleton-core` package — shared engine and extension contracts only.
-- **CodeTrail**: An ordered five-step sequence (Keyword → Chapter → Article → Part → Section) that locates an NEC answer.
-- **TrailGrader**: The Core module that evaluates a user's step-by-step picks against a correct `CodeTrail` and returns a per-step result.
+- **CodeTrail**: A keyword plus one or more legs that traces a path through the NEC code book to an answer. Each leg is an ordered, non-empty list of `{ level, value }` steps. Allowed levels: `chapter`, `article`, `part`, `section`, `table`, `notes`, `annex`. A trail may have more than one leg when a section cross-references another location in the book.
+- **TrailGrader**: The Core module that evaluates a user's step-by-step picks against one or more valid `CodeTrail` values declared by a drill and returns a graded result.
 - **CalcPlugin**: A calculator module that conforms to the `defineCalcPlugin` contract.
 - **CalcInput**: The typed input descriptor declared by a `CalcPlugin`.
 - **CalcOutput**: The typed output descriptor declared by a `CalcPlugin`.
-- **InvariantSuite**: The set of fast-check property-based tests a `CalcPlugin` must declare and that the test runner must execute.
+- **Invariant**: A named check declared by a `CalcPlugin`. It carries an `id`, a `description`, and a pure `check: (input, output) => boolean`. The fast-check arbitrary that drives it is supplied by the test file, not stored in the plugin.
+- **TrailLeg**: An ordered, non-empty array of `{ level, value }` steps within a `CodeTrail`.
+- **TrailStep**: A single `{ level: TrailLevel; value: string }` object within a `TrailLeg`.
+- **TrailLevel**: One of the string literals `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex"`.
+- **ALLOWED_LEVELS**: The exported readonly tuple of all valid `TrailLevel` values, replacing the former `TRAIL_STEPS` constant.
+- **NO_PARTS**: The exported string constant `"NONE"` used by a user to indicate they believe a trail has no part step.
+- **movedFrom**: An optional `CodeTrail` on a `CodeTrailDef` recording where the same answer was located in the 2023 NEC edition.
 - **CodeTrailDef**: A drill-pack module that conforms to the `defineCodeTrail` contract.
 - **TableValue**: The data shape used to hold any value sourced from an NEC table. Contains the numeric value, a `source` string naming the table, and an `nfpa_checked` boolean flag.
 - **Plugin Registry**: The runtime map that holds all registered `CalcPlugin` and `CodeTrailDef` instances keyed by their declared `id`.
@@ -21,33 +27,51 @@
 
 ## Requirements
 
-### Requirement 1: CodeTrail Type and Step Ordering
+### Requirement 1: CodeTrail Type and Structure
 
-**User Story:** As a developer building either app, I want a single canonical type for the five-step NEC navigation path, so that both apps and all calculators describe answers the same way.
+**User Story:** As a developer building either app, I want a single canonical type that models the NEC Navigation Method path through the code book, so that both apps and all calculators describe answers the same way regardless of which chapters or levels a particular answer passes through.
 
 #### Acceptance Criteria
 
-1. THE Core SHALL export a `CodeTrail` type whose fields are, in order: `keyword`, `chapter`, `article`, `part`, and `section`, each typed as a string between 1 and 200 characters inclusive.
-2. THE Core SHALL enforce at the TypeScript type level that all five fields are present and non-optional on every `CodeTrail` value.
-3. WHEN a developer omits any of the five `CodeTrail` fields, THE TypeScript compiler SHALL produce a type error at the call site.
-4. THE Core SHALL export a `TRAIL_STEPS` constant typed as a `readonly` five-element tuple in the canonical order `["keyword", "chapter", "article", "part", "section"]`, such that the TypeScript compiler rejects any mutation or reordering of its elements.
-5. WHEN `validateCodeTrail` is called with a `CodeTrail` value in which any field is an empty string, THE Core SHALL return a failure result identifying each field whose value has fewer than 1 character, without modifying the input value.
+1. THE Core SHALL export a `TrailLevel` type defined as the union `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex"`.
+2. THE Core SHALL export an `ALLOWED_LEVELS` constant typed as a `readonly` tuple listing every `TrailLevel` value in the order: `["chapter", "article", "part", "section", "table", "notes", "annex"]`, such that the TypeScript compiler rejects any mutation or reordering of its elements.
+3. THE Core SHALL export a `TrailStep` type defined as `{ level: TrailLevel; value: string }` where `value` is a non-empty string of 1–200 characters.
+4. THE Core SHALL export a `TrailLeg` type defined as a `readonly` non-empty array of `TrailStep` values.
+5. THE Core SHALL export a `CodeTrail` type defined as `{ keyword: string; legs: readonly TrailLeg[] }` where `keyword` is a non-empty string of 1–200 characters and `legs` contains at least one `TrailLeg`.
+6. THE Core SHALL export a `validateCodeTrail` function that accepts a `CodeTrail` and returns a result indicating either success or a list of validation failures, without modifying the input.
+7. WHEN `validateCodeTrail` is called on a `CodeTrail` whose `keyword` is an empty string, THE function SHALL return a failure identifying the `keyword` field as invalid.
+8. WHEN `validateCodeTrail` is called on a `CodeTrail` whose `legs` array is empty, THE function SHALL return a failure indicating at least one leg is required.
+9. FOR EACH leg in a `CodeTrail`, WHEN `validateCodeTrail` is called, THE function SHALL enforce these structural rules:
+   a. A leg's first step MUST have level `"chapter"`, `"annex"`, or `"article"` (the last only when the article is the introduction that precedes Chapter 1 — illustrative example: Article 90).
+   b. Within Chapters 1 through 8 (illustrative, unverified): a leg proceeds from `"chapter"` → `"article"` → optional `"part"` → one or more of `"section"` and/or `"table"` → optional `"notes"`. A leg MAY end at `"section"`, `"table"`, or `"notes"`.
+   c. Within Chapter 9 (illustrative, unverified): a leg proceeds from `"chapter"` → `"table"` → optional `"notes"`. No `"article"`, `"part"`, or `"section"` steps are permitted.
+   d. An annex leg proceeds from `"annex"` → `"table"` → optional `"notes"`.
+   e. Any leg that does not conform to rules (a)–(d) SHALL produce a failure identifying the leg index and the offending step.
+10. WHEN `validateCodeTrail` is called on a `CodeTrail` with more than one leg, THE function SHALL validate each leg independently using rules 9a–9e, and SHALL return all failures across all legs in a single result.
 
 ---
 
 ### Requirement 2: TrailGrader — Step-by-Step Grading
 
-**User Story:** As a developer building the Midnight Code Hunt drill UI, I want a pure function that grades a user's picks against a correct trail one step at a time, so that the UI can display per-step feedback without knowing the grading logic itself.
+**User Story:** As a developer building the Midnight Code Hunt drill UI, I want a pure function that grades a user's picks against one or more valid trails declared by a drill, so that the UI can show per-step feedback, distinguish old-edition answers from plain misses, and handle part-less trails gracefully — all without encoding grading logic in the UI.
 
 #### Acceptance Criteria
 
-1. THE Core SHALL export a `gradeTrail` function that accepts a correct `CodeTrail` and an array of user-pick strings (one per step, in `TRAIL_STEPS` order) and returns a `TrailResult` array of exactly five elements in `TRAIL_STEPS` order, where each `TrailResult` element contains the `step` key (a `TRAIL_STEPS` member) and a `verdict` field typed as `"correct" | "incorrect" | "unanswered"`.
-2. WHEN a user pick exactly matches the corresponding step value in the correct `CodeTrail` (compared after trimming leading and trailing whitespace from both strings and folding both to lower-case), THE `gradeTrail` function SHALL set that element's `verdict` to `"correct"`.
-3. WHEN a user pick is present at the corresponding index but does not match the corresponding step value after case-insensitive trimmed comparison, THE `gradeTrail` function SHALL set that element's `verdict` to `"incorrect"`.
-4. WHEN the user picks array contains fewer than five entries, THE `gradeTrail` function SHALL set the `verdict` for every index beyond the last supplied pick to `"unanswered"`; WHEN the user picks array contains more than five entries, THE `gradeTrail` function SHALL ignore all entries at index five and beyond and still return exactly five `TrailResult` elements.
-5. THE Core SHALL export a `TrailVerdict` type defined as the union `"correct" | "incorrect" | "unanswered"` and a `TrailResult` type defined as an object with a `step` field (a member of `TRAIL_STEPS`) and a `verdict` field of type `TrailVerdict`.
-6. THE `gradeTrail` function SHALL be pure and deterministic: it SHALL read no module-level mutable state, write no module-level mutable state, and produce no observable effects beyond returning its value, such that identical inputs always produce identical outputs.
-7. THE Core SHALL verify with fast-check that for all valid `CodeTrail` objects and all user-pick arrays of length five, calling `gradeTrail` twice with the same arguments returns arrays of length five whose `step` and `verdict` values are identical at every index (idempotence property).
+1. THE Core SHALL export a `NO_PARTS` constant equal to the string `"NONE"`, which a user may pick at a part step to indicate they believe the trail has no part.
+2. THE Core SHALL export a `TrailVerdict` type defined as the union `"correct" | "incorrect" | "unanswered"`.
+3. THE Core SHALL export a `StepResult` type defined as `{ level: TrailLevel; verdict: TrailVerdict }`.
+4. THE Core SHALL export a `GradeResult` type defined as `{ stepResults: StepResult[]; matched: boolean; matchedMovedFrom: boolean }`.
+5. THE Core SHALL export a `gradeTrail` function that accepts a `DrillDef` (containing a non-empty `trails` array of `CodeTrail` values and an optional `movedFrom: CodeTrail`) and a flat array of user-pick strings aligned to the levels of the trail being tested, and returns a `GradeResult`.
+6. WHEN the user's picks match any one trail in the `trails` array (using case-insensitive trimmed comparison on each `value`), THE `gradeTrail` function SHALL return a `GradeResult` with `matched: true` and `matchedMovedFrom: false`.
+7. WHEN the user's picks match no trail in the `trails` array AND a `movedFrom` trail is present AND the picks match the `movedFrom` trail, THE `gradeTrail` function SHALL return a `GradeResult` with `matched: false` and `matchedMovedFrom: true`, so the UI can distinguish an old-edition answer from a plain miss.
+8. WHEN the user's picks match no trail in `trails` and either no `movedFrom` is present or the picks do not match `movedFrom`, THE `gradeTrail` function SHALL return a `GradeResult` with `matched: false` and `matchedMovedFrom: false`.
+9. WHEN a valid trail in `trails` contains no step with level `"part"`, AND the user picks `NO_PARTS` at the position where a part step would appear, THE `gradeTrail` function SHALL treat that pick as correct for that position.
+10. WHEN a valid trail in `trails` contains no step with level `"part"`, AND the user provides no pick at the part position (omits it), THE `gradeTrail` function SHALL also treat the omission as correct for that position.
+11. WHEN a valid trail in `trails` DOES contain a step with level `"part"`, AND the user picks `NO_PARTS` at that position, THE `gradeTrail` function SHALL mark that step's verdict as `"incorrect"`.
+12. THE `gradeTrail` function SHALL be pure and deterministic: it SHALL read no module-level mutable state, write no module-level mutable state, and produce no observable effects beyond returning its value.
+13. THE Core SHALL verify with fast-check that for all valid `DrillDef` inputs and corresponding user-pick arrays, calling `gradeTrail` twice with the same arguments returns `GradeResult` values that are structurally equal at every field (determinism property).
+14. THE Core SHALL verify with fast-check that for any `CodeTrail` declared in `trails`, constructing user picks directly from that trail's step values and passing them to `gradeTrail` always returns `matched: true` (any declared valid trail grades fully correct against itself).
+15. THE Core SHALL verify with fast-check that for any `CodeTrail` in `trails` that contains no `"part"` step, a pick array that uses `NO_PARTS` at the part position produces the same `matched` result as a pick array that omits the part position entirely (`NO_PARTS` equivalence property).
 
 ---
 
@@ -58,10 +82,11 @@
 #### Acceptance Criteria
 
 1. THE Core SHALL export a `defineCalcPlugin` function that accepts a `CalcPluginDef<I, O>` object and returns it unchanged (identity function at runtime, typed at compile time).
-2. THE `CalcPluginDef<I, O>` type SHALL require the following fields: `id` (non-empty string of 1–100 characters, unique per plugin registration), `label` (non-empty string of 1–120 characters), `inputs` (non-empty array of `CalcInput` descriptors, where each `CalcInput` has a non-empty `name` string and a `type` of `"number" | "string" | "select"`), `outputs` (non-empty array of `CalcOutput` descriptors, where each `CalcOutput` has a non-empty `name` string and a `type` of `"number" | "string"`), `calculate` (a synchronous function typed as `(input: I) => O` that does not return a Promise), `trail` (a `CodeTrail` as defined by the Core), and `invariants` (a non-empty array of `Invariant<I, O>` descriptors containing at least one entry).
+2. THE `CalcPluginDef<I, O>` type SHALL require the following fields: `id` (non-empty string of 1–100 characters, unique per plugin registration), `label` (non-empty string of 1–120 characters), `inputs` (non-empty array of `CalcInput` descriptors, where each `CalcInput` has a non-empty `name` string and a `type` of `"number" | "string" | "select"`), `outputs` (non-empty array of `CalcOutput` descriptors, where each `CalcOutput` has a non-empty `name` string and a `type` of `"number" | "string"`), `calculate` (a synchronous function typed as `(input: I) => O` that does not return a Promise), `trails` (a function typed as `(input: I) => readonly CodeTrail[]` that returns a non-empty array of `CodeTrail` values representing the code-book references behind this calculation's answer; the array may vary with input), and `invariants` (a non-empty array of `Invariant<I, O>` descriptors containing at least one entry).
 3. WHEN a `CalcPlugin` author omits any required field from `CalcPluginDef`, THE TypeScript compiler SHALL produce a type error.
-4. THE `Invariant<I, O>` type SHALL require an `id` field (non-empty string of 1–100 characters), a `description` field (non-empty string of 1–200 characters), and a `property` field typed as `fc.IProperty<[I]>` from the fast-check library, so that the test runner can execute it without additional wiring.
-5. THE Core SHALL export a `runInvariants` function that accepts a `CalcPluginDef<I, O>` and executes each declared invariant using fast-check with a minimum of 100 runs per invariant, returning an `InvariantReport` array with one entry per invariant in declaration order.
+4. THE `Invariant<I, O>` type SHALL require an `id` field (non-empty string of 1–100 characters), a `description` field (non-empty string of 1–200 characters), and a `check` field typed as `(input: I, output: O) => boolean`. THE `Invariant` type SHALL NOT include any fast-check `Arbitrary` or `IProperty` field; the arbitrary is supplied by the test file at the call site of `runInvariants`.
+5. THE Core SHALL export a `runInvariants` function typed as `runInvariants<I, O>(plugin: CalcPluginDef<I, O>, arbitraries: Record<string, fc.Arbitrary<I>>, options?: { numRuns?: number }): InvariantReport[]`. The `arbitraries` parameter maps each invariant `id` to the fast-check `Arbitrary<I>` that generates inputs for it. The default `numRuns` SHALL be 100 when not specified.
+5a. THE Core's runtime entry point (the files included in the published `dist/`) SHALL NOT import `fast-check`. Fast-check SHALL appear only in `devDependencies` of `skeleton-core`'s `package.json` and SHALL be imported only in test files.
 6. THE `InvariantReport` type SHALL require the following fields: `invariantId` (the `id` string of the corresponding `Invariant`), `status` (`"pass"` or `"fail"`), and `counterexample` (a string describing the failing input when `status` is `"fail"`, or `null` when `status` is `"pass"`).
 7. WHEN all invariants pass, THE `runInvariants` function SHALL return an `InvariantReport` array where every entry has `status: "pass"` and `counterexample: null`.
 8. WHEN any invariant fails, THE `runInvariants` function SHALL return an `InvariantReport` entry for that invariant with `status: "fail"` and `counterexample` set to the failing input serialized as a non-empty string by fast-check, without throwing an exception.
@@ -100,14 +125,17 @@
 
 ### Requirement 6: defineCodeTrail — Drill-Pack Contract
 
-**User Story:** As a developer building a drill pack for Midnight Code Hunt, I want a typed contract function that forces me to declare a unique id, a label, and a correct `CodeTrail`, so that drill packs are self-describing and can be registered without modifying Core.
+**User Story:** As a developer building a drill pack for Midnight Code Hunt, I want a typed contract function that forces me to declare one or more valid trails, an optional previous-edition trail, and a hint, so that drill packs are self-describing, support multi-trail answers, and let the UI distinguish old-edition picks from plain misses.
 
 #### Acceptance Criteria
 
-1. THE Core SHALL export a `defineCodeTrail` function that accepts a `CodeTrailDef` object and returns it unchanged (identity function at runtime, typed at compile time).
-2. THE `CodeTrailDef` type SHALL require: `id` (unique non-empty string), `label` (human-readable string), `trail` (a valid `CodeTrail`), and `hint` (a non-empty string that describes where to find the answer in the code book, without quoting NEC text).
-3. WHEN a developer omits any required field from `CodeTrailDef`, THE TypeScript compiler SHALL produce a type error.
-4. WHERE a `CodeTrailDef` includes an optional `tableValues` field, THE Core SHALL type that field as `ReadonlyArray<TableValue>` so that any table-sourced data in a drill pack conforms to the `TableValue` shape.
+1. THE Core SHALL export a `defineCodeTrail` function that accepts a `CodeTrailDef` object and returns the exact same object reference passed in, with no properties added, removed, or mutated.
+2. THE `CodeTrailDef` type SHALL require: `id` (a non-empty string of 1–128 characters, intended to be unique per drill pack and enforced by convention at registration rather than by this function), `label` (a non-empty string of 1–128 characters), `trails` (a non-empty `readonly CodeTrail[]` array of valid trails any one of which is an acceptable answer), and `hint` (a non-empty string of 1–500 characters describing where to find the answer in the code book without quoting NEC text).
+3. THE `CodeTrailDef` type SHALL include an optional `movedFrom` field typed as `CodeTrail`, recording where the same answer was located in the 2023 NEC edition.
+4. WHEN a developer omits any required field from `CodeTrailDef`, THE TypeScript compiler SHALL produce a type error.
+5. WHEN `validateCodeTrail` is called on a `CodeTrailDef`, THE function SHALL validate every `CodeTrail` in the `trails` array using the structural rules in Requirement 1, and SHALL return all failures across all trails in a single result.
+6. WHEN `validateCodeTrail` is called on a `CodeTrailDef` that includes a `movedFrom` trail, THE function SHALL also validate the `movedFrom` trail using the structural rules in Requirement 1 and include any failures in the result.
+7. WHERE a `CodeTrailDef` includes an optional `tableValues` field, THE Core SHALL type that field as `ReadonlyArray<TableValue>` so that any table-sourced data in a drill pack conforms to the `TableValue` shape.
 
 ---
 
@@ -137,3 +165,5 @@
 2. THE Core package SHALL NOT export any React components, Tailwind class strings, or Vite plugin configurations.
 3. THE Core `package.json` SHALL NOT list `midnight-code-hunt` or `dead-circuit-check` as dependencies or devDependencies.
 4. WHEN the Core package is built in isolation (without the app packages present), THE build SHALL complete without errors.
+5. THE Core package SHALL NOT contain any NEC table data files, drill pack definitions, or calculator plug-in implementations specific to either app.
+6. IF the Core package's built output (e.g., `dist/`) contains any file that, when statically analyzed, includes an import of `fast-check`, THEN the build verification SHALL report a failure and exit with a non-zero status code.
