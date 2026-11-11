@@ -38,9 +38,9 @@ Content rules for every task: no drill content is written by any task (the found
     - _Requirements: 1.6, 1.9, 1.10, 13.3, 14.10, 17.19_
 
   - [ ] 1.4 Write `scripts/check-static.mjs` and `scripts/check-bundle.mjs`
-    - `check-static.mjs` walks `src/` (comments included) and exits non-zero, printing each offending file path, for: whole-word `fetch`, `XMLHttpRequest`, `WebSocket`, or `sendBeacon`; an import specifier containing `skeleton-core/` or `packages/skeleton-core`; an import that resolves into `test/` or a fixtures folder; an import of `fast-check` from a non-test file
+    - `check-static.mjs` walks `src/` (comments included) and exits non-zero, printing each offending file path, for: whole-word `fetch`, `XMLHttpRequest`, `WebSocket`, or `sendBeacon`; an import specifier containing `skeleton-core/` or `packages/skeleton-core`; an import that resolves into `test/` or a fixtures folder, checked in non-test files only; an import of `fast-check` from a non-test file
     - `check-bundle.mjs` scans `dist/` and exits non-zero, printing the path, if `fast-check` appears
-    - Both exit zero on clean input; the walk skips `*.test.*` files for the `fast-check` rule only
+    - Both exit zero on clean input; the walk skips `*.test.*` files (including `*.test.ts` and `*.test.tsx`) for both the test-import rule and the `fast-check` rule, because the co-located property and component tests import `test/support/*` and `test/fixtures/*`
     - _Requirements: 1.9, 1.11, 1.12, 17.19_
 
   - [ ] 1.5 Create the minimal buildable app shell
@@ -297,7 +297,7 @@ Content rules for every task: no drill content is written by any task (the found
     - _Requirements: 2.5, 2.11, 2.12, 2.13, 2.14, 2.16, 3.4, 3.8, 6.4, 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8, 17.9_
 
   - [ ] 8.4 Create the fictional drill fixtures
-    - Files under `test/fixtures/` (never imported by `src/`), each marked fictional in its content: an Article with Parts; an Article with no Parts; a Chapter 9 table with a `tableWalk`; an Index route with a subdivision; a drill with `movedFrom` and `editionNote`; a drill with two valid trails of one method and different keywords; a decoy Article with `hasParts: true` on a part-less trail
+    - Files under `test/fixtures/` (never imported by non-test files in `src/`), each marked fictional in its content: an Article with Parts; an Article with no Parts; a Chapter 9 table with a `tableWalk`; an Index route with a subdivision; a drill with `movedFrom` and `editionNote`; a drill with two valid trails of one method and different keywords; a decoy Article with `hasParts: true` on a part-less trail
     - All NEC-looking numbers are made up and unverified; `founder_checked`, `index_checked`, and `wrongOptionsReviewed` as each case needs; trees built with `treeFromTrails`
     - _Requirements: 2.15, 2.17, 17.19, 17.20_
 
@@ -433,7 +433,8 @@ Content rules for every task: no drill content is written by any task (the found
     - _Requirements: 13.4, 13.6, 13.7, 13.8, 14.3_
 
   - [ ] 13.6 Write tests for the static and bundle scripts
-    - File `scripts/check-static.test.ts` and `scripts/check-bundle.test.ts`: run each script against temp directories and assert non-zero exit naming each offending file for a network word, a deep Core import, a test import, and a `fast-check` import, and zero exit for clean source
+    - File `scripts/check-static.test.ts` and `scripts/check-bundle.test.ts`: run each script against temp directories and assert non-zero exit naming each offending file for a network word, a deep Core import, and a `fast-check` import in a non-test file, and zero exit for clean source
+    - `check-static.test.ts` asserts the test-import rule in both directions: a non-test file under `src/` that imports `test/` (or a fixtures folder) fails and is named in the output; a `*.test.ts` or `*.test.tsx` file under `src/` that imports `test/support` or `test/fixtures` passes
     - _Requirements: 1.9, 1.11, 1.12, 17.19_
 
   - [ ] 13.7 Write the root verify propagation test
@@ -458,7 +459,7 @@ Content rules for every task: no drill content is written by any task (the found
 
 - Every sub-task is required; there are no optional `*` markers in this plan.
 - The founder supplies all drill content (questions, answers, trails, hints, Index entries, citations, printed names). Kiro may draft only wrong options, only when the founder asks, and a record with drafted wrong options keeps `wrongOptionsReviewed: false` and `founder_checked: false`. Founder review of content, printed names, Index entries, and NEC citations happens outside this task list; every NEC number and table value stays unverified until the founder confirms it against the NFPA 2026 source.
-- The Drill_Library ships empty; tests use fictional fixtures in `test/fixtures/`, which no file under `src/` imports.
+- The Drill_Library ships empty; tests use fictional fixtures in `test/fixtures/`, which no non-test file under `src/` imports.
 - Property test files are split one per property, a refinement of the design's file table, so tasks never share a file within a wave.
 - `bestTimeToSubmit` in `src/logic/attempt.ts` is a small pure helper added so Property 14 can be tested without rendering; the design's rule (save only from `checked` with a correct result) is unchanged.
 - If a pinned version in task 1.2 is not on the registry at install time, record the substitute exact pin here.
@@ -472,15 +473,16 @@ Content rules for every task: no drill content is written by any task (the found
     { "id": 0, "tasks": ["1.1", "1.2"] },
     { "id": 1, "tasks": ["1.3", "1.4", "1.5"] },
     { "id": 2, "tasks": ["1.7"] },
-    { "id": 3, "tasks": ["1.6", "2.1", "3.6", "4.1", "9.2", "9.3", "13.6", "13.7"] },
-    { "id": 4, "tasks": ["2.2", "2.3", "3.1", "3.7", "4.2", "4.3", "4.4", "4.5", "4.6", "5.1", "5.9"] },
-    { "id": 5, "tasks": ["2.4", "2.5", "2.7", "3.2", "3.3", "3.4", "3.5", "4.7", "4.8", "4.9", "5.2", "5.10"] },
-    { "id": 6, "tasks": ["2.6", "5.3", "6.1", "8.1", "8.2", "8.3", "8.4", "9.1", "9.4", "13.4", "13.8"] },
-    { "id": 7, "tasks": ["5.4", "5.5", "5.6", "5.7", "5.8", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "8.5", "8.6", "8.7", "9.5", "9.6", "10.1", "10.2", "10.3", "11.1", "11.3", "13.1"] },
-    { "id": 8, "tasks": ["6.8", "6.9", "6.10", "10.4", "10.5", "10.6", "10.7", "11.2", "11.5", "11.7", "13.2"] },
-    { "id": 9, "tasks": ["11.4"] },
-    { "id": 10, "tasks": ["11.6", "11.8", "11.9", "13.3", "13.5"] },
-    { "id": 11, "tasks": ["15.1"] }
+    { "id": 3, "tasks": ["1.6", "2.1", "3.6", "4.1", "4.6", "9.2", "9.3", "13.6", "13.7"] },
+    { "id": 4, "tasks": ["2.3", "3.1", "4.2", "4.3", "4.4", "4.5", "5.1", "5.9", "8.2"] },
+    { "id": 5, "tasks": ["2.2", "2.5", "2.7", "3.2", "3.3", "3.4", "3.5", "3.7", "4.7", "4.8", "4.9", "5.2", "5.10", "8.4"] },
+    { "id": 6, "tasks": ["2.4", "2.6", "5.3", "6.1", "8.1", "9.1", "9.4", "10.2", "13.4", "13.8"] },
+    { "id": 7, "tasks": ["5.4", "5.5", "5.6", "5.7", "5.8", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "8.3", "9.5", "10.3", "10.5"] },
+    { "id": 8, "tasks": ["6.8", "6.9", "6.10", "8.5", "8.6", "8.7", "10.1", "10.7", "11.1", "11.3"] },
+    { "id": 9, "tasks": ["11.2", "11.5", "11.7", "13.1", "13.2"] },
+    { "id": 10, "tasks": ["10.4", "10.6", "11.4"] },
+    { "id": 11, "tasks": ["9.6", "11.6", "11.8", "11.9", "13.3", "13.5"] },
+    { "id": 12, "tasks": ["15.1"] }
   ]
 }
 ```

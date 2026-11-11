@@ -31,7 +31,7 @@ midnight-code-hunt/
 ├── vite.config.ts                # React + Tailwind plugins, Vitest config, core alias
 ├── .env.example                  # VITE_DEAD_CIRCUIT_CHECK_URL=
 ├── scripts/
-│   ├── check-static.mjs          # network-call, deep-import, test-import, fast-check-import scan
+│   ├── check-static.mjs          # network-call, deep-import, test-import (non-test files), fast-check-import scan
 │   └── check-bundle.mjs          # scans dist/ for fast-check
 ├── src/
 │   ├── main.tsx                  # mounts <App/>
@@ -83,12 +83,12 @@ midnight-code-hunt/
     │   ├── bannedTerms.ts        # the ONLY file holding the banned-term list (excluded from scan)
     │   ├── readingLevel.ts       # Flesch-Kincaid grade + average sentence length
     │   └── contrast.ts           # WCAG ratio from oklch/hex
-    ├── fixtures/                 # fictional drills + fictional names files (never imported by src/)
+    ├── fixtures/                 # fictional drills + fictional names files (never imported by non-test files in src/)
     ├── data/drillData.test.ts    # data test over DRILL_LIBRARY and fixtures
     └── content/                  # content-scan, reading-level, token-once, contrast tests
 ```
 
-Unit and property tests for `src/logic/*` are co-located as `src/logic/<module>.test.ts`; component tests as `src/ui/<Component>.test.tsx`. Production code never imports from `test/` (enforced by `check-static.mjs`).
+Unit and property tests for `src/logic/*` are co-located as `src/logic/<module>.test.ts`; component tests as `src/ui/<Component>.test.tsx`. Non-test source files never import from `test/` or a fixtures folder (enforced by `check-static.mjs`, which skips `*.test.*` files for that rule because the co-located tests import `test/support/*` and `test/fixtures/*`).
 
 ### Module dependencies
 
@@ -235,12 +235,14 @@ Order is fixed and every step is a hard gate (`&&` chain; any non-zero exit stop
 
 `scripts/check-static.mjs` walks `src/` and fails with the path of each offending file:
 
-| Check | Pattern (in any file under `src/`) | Requirement |
+| Check | Pattern | Requirement |
 |---|---|---|
-| Network primitives | whole-word `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` | 1.11, 1.10 |
-| Deep Core import | import specifier containing `skeleton-core/` or `packages/skeleton-core` | 1.6 |
-| Test code in production | import specifier resolving into `test/` or `fixtures` | 17.19 |
-| fast-check in production | import of `fast-check` from a non-test file | 1.3, 1.9 |
+| Network primitives | whole-word `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` (any file under `src/`) | 1.11, 1.10 |
+| Deep Core import | import specifier containing `skeleton-core/` or `packages/skeleton-core` (any file under `src/`) | 1.6 |
+| Test code in production | import specifier resolving into `test/` or a fixtures folder, in a non-test file under `src/` (files named `*.test.*`, including `*.test.ts` and `*.test.tsx`, are skipped for this rule) | 17.19 |
+| fast-check in production | import of `fast-check` from a non-test file under `src/` (`*.test.*` files are skipped) | 1.3, 1.9 |
+
+The co-located property and component tests under `src/` import `test/support/*` and `test/fixtures/*` on purpose, so the test-import rule applies to non-test files only. Requirement 17.19 bars production source files, not test files, from importing fixtures.
 
 The comment rule follows from the first row: no file under `src/`, comments included, may contain those four words. Docs inside `src/` therefore say "network call".
 
