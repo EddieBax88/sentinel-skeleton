@@ -88,7 +88,8 @@ export type TrailLevel =
   | "section"
   | "table"
   | "notes"
-  | "annex";
+  | "annex"
+  | "index";
 
 export const ALLOWED_LEVELS = [
   "chapter",
@@ -98,6 +99,7 @@ export const ALLOWED_LEVELS = [
   "table",
   "notes",
   "annex",
+  "index",
 ] as const satisfies readonly TrailLevel[];
 
 export type TrailStep = {
@@ -142,6 +144,7 @@ Each leg is validated as a sequence of `TrailStep` values. The validator walks t
 | **Chapter 9** | `"chapter"` whose `extractFirstNumber(value) === 9` | `table` → optional `notes`. No `article`, `part`, or `section`. | `table`, `notes` |
 | **Annex** | `"annex"` | `table` → optional `notes` | `table`, `notes` |
 | **Article 90 intro** | `"article"` whose `extractFirstNumber(value) === 90` | `section` → optional `notes` | `section`, `notes` |
+| **Index** | `"index"` | Exactly one `section` or `table`, then optional `notes`. No `chapter`, `article`, or `part` steps and no repeated `section` / `table` steps. | `section`, `table`, `notes` |
 
 #### extractFirstNumber helper
 
@@ -155,9 +158,9 @@ export function extractFirstNumber(s: string): number | null {
 
 Explanation: scans `s` for the first contiguous run of ASCII digit characters and returns it as a `number`. Returns `null` when no digits are present. Only the first run is used; any later digit runs are ignored. Used by `validateCodeTrail` to identify chapter and article numbers from step values without relying on string-prefix matching.
 
-The path kind is determined by inspecting the first step. Unknown first steps are a validation failure.
+The path kind is determined by inspecting the first step. Unknown first steps are a validation failure. The failure message lists the valid starts: chapter, annex, index, and article (Article 90 only).
 
-A `CodeTrail` with `keyword: ""` immediately fails. A `CodeTrail` with `legs: []` immediately fails. When a `CodeTrailDef` is passed, all `CodeTrail` values in `trails` and the optional `movedFrom` are validated and all failures are collected into a single result.
+A `CodeTrail` with `keyword: ""` immediately fails. A `CodeTrail` with `legs: []` immediately fails. When a `CodeTrailDef` is passed, all `CodeTrail` values in `trails` and the optional `movedFrom` are validated and all failures are collected into a single result. When given a `CodeTrailDef`, validation also checks that `editionNote` (if present) is 1-300 characters; otherwise it reports a failure with field `"editionNote"`.
 
 #### Algorithm sketch
 
@@ -371,9 +374,12 @@ export type CodeTrailDef = {
   readonly trails: readonly [CodeTrail, ...CodeTrail[]]; // non-empty
   readonly hint: string;         // non-empty, 1–500 chars; no NEC text quotes
   readonly movedFrom?: CodeTrail;
+  readonly editionNote?: string; // 1-300 chars; shown by the UI alongside matchedMovedFrom feedback
   readonly tableValues?: ReadonlyArray<TableValue>;
 };
 ```
+
+`gradeTrail` and `GradeResult` are unchanged. The UI reads `editionNote` from the drill definition and shows it alongside `matchedMovedFrom` feedback.
 
 #### defineCodeTrail (`src/drill/defineCodeTrail.ts`)
 
@@ -499,6 +505,7 @@ The per-leg validator is a minimal state machine. Each state represents "which l
 State S0 (initial):
   chapter    → S1_main (or S1_ch9 if extractFirstNumber(value) === 9)
   annex      → S2_annex
+  index      → S2_index
   article    → S3_art90 (only if extractFirstNumber(value) === 90)
   otherwise  → FAIL
 
@@ -553,6 +560,15 @@ State S6_art90:
   notes      → S7_terminal
   [end]      → OK
   otherwise  → FAIL
+
+State S2_index (after index):
+  section | table → S6_index
+  otherwise  → FAIL
+
+State S6_index:
+  notes      → S7_terminal
+  [end]      → OK
+  otherwise  → FAIL
 ```
 
 ### GradeResult computation
@@ -567,23 +583,23 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ### Property 1: Valid CodeTrail passes validation
 
-*For any* CodeTrail object whose keyword is non-empty, whose legs array is non-empty, and whose steps conform to the per-leg structural rules, `validateCodeTrail` SHALL return `{ ok: true }`.
+*For any* CodeTrail object whose keyword is non-empty, whose legs array is non-empty, and whose steps conform to the per-leg structural rules, `validateCodeTrail` SHALL return `{ ok: true }`. Generators include trails with index legs (`"index"` → one `section` or `table` → optional `notes`).
 
-**Validates: Requirements 1.6, 1.9**
+**Validates: Requirements 1.1, 1.2, 1.6, 1.9, 1.10, 1.14**
 
 ---
 
 ### Property 2: Invalid CodeTrail always produces failures
 
-*For any* CodeTrail object that violates at least one structural rule (empty keyword, empty legs, or a malformed step sequence), `validateCodeTrail` SHALL return `{ ok: false }` with a non-empty `failures` array identifying the offending field.
+*For any* CodeTrail object that violates at least one structural rule (empty keyword, empty legs, or a malformed step sequence), `validateCodeTrail` SHALL return `{ ok: false }` with a non-empty `failures` array identifying the offending field. Generators include invalid index legs: `"index"` followed by two `section` steps, `"index"` followed by an `article` step, and `"index"` with no following step.
 
-**Validates: Requirements 1.7, 1.8, 1.9**
+**Validates: Requirements 1.7, 1.8, 1.9, 1.14**
 
 ---
 
 ### Property 3: gradeTrail self-match (round-trip)
 
-*For any* valid `CodeTrail` declared in a `DrillDef`'s `trails` array, constructing the user-pick array directly from that trail's flattened step values and passing them to `gradeTrail` SHALL return a `GradeResult` with `matched: true`.
+*For any* valid `CodeTrail` declared in a `DrillDef`'s `trails` array, constructing the user-pick array directly from that trail's flattened step values and passing them to `gradeTrail` SHALL return a `GradeResult` with `matched: true`. Generated trails include trails with index legs.
 
 **Validates: Requirements 2.6, 2.14**
 
@@ -671,6 +687,14 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ---
 
+### Property 14: editionNote validation
+
+*For any* string of length 1-300 used as the `editionNote` of a `CodeTrailDef`, `validateCodeTrail` SHALL report no failure with field `"editionNote"`. *For any* `editionNote` string of length 0 or over 300, `validateCodeTrail` SHALL report a failure with field `"editionNote"`.
+
+**Validates: Requirements 6.8, 6.9, 6.10**
+
+---
+
 ## Error Handling
 
 | Condition | Location | Behavior |
@@ -678,6 +702,8 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 | `validateCodeTrail` on empty `keyword` | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "keyword", message: "..." }] }` |
 | `validateCodeTrail` on empty `legs` | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "legs", message: "..." }] }` |
 | `validateCodeTrail` on malformed step sequence | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` for each offending step, all legs validated independently |
+| `validateCodeTrail` on malformed index leg (e.g. `"index"` followed by two `section` steps, followed by an `article`, or with no following step) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` identifying the leg index and offending step; non-throwing |
+| `validateCodeTrail` on `CodeTrailDef` with invalid `editionNote` (empty or over 300 characters) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "editionNote", message: "..." }] }`; non-throwing |
 | `makeTableValue` called with empty `source` | `src/table/makeTableValue.ts` | Throws `Error("makeTableValue: source must be a non-empty string")` |
 | `createRegistry().register` called with duplicate `id` | `src/registry/createRegistry.ts` | Throws `Error('PluginRegistry: duplicate id "..."')` |
 | `runInvariants` — `calculate` throws | `src-test-utils/runInvariants.ts` | Records `status: "fail"` with `counterexample` describing the throwing input; continues with remaining invariants |
@@ -703,7 +729,7 @@ All errors from `validateCodeTrail` are non-throwing (returned as structured val
 packages/skeleton-core/
 └── src/
     ├── trail/
-    │   ├── validate.test.ts      # Properties 1, 2 + edge cases
+    │   ├── validate.test.ts      # Properties 1, 2, 14 + edge cases (generators include index legs)
     │   └── grade.test.ts         # Properties 3, 4, 5, 6 + unit examples
     ├── plugin/
     │   └── defineCalcPlugin.test.ts  # Property 7 + runInvariants unit tests
@@ -718,7 +744,7 @@ packages/skeleton-core/
 ### Dual testing approach
 
 **Property-based tests** cover:
-- Properties 1–12 as universally quantified assertions across generated inputs.
+- Properties 1–14 as universally quantified assertions across generated inputs. Trail generators for Properties 1, 2, and 3 include index legs (valid and invalid); Property 14 generates `editionNote` strings of length 0, 1-300, and over 300.
 - Each property test references its property number in a comment.
 
 **Unit / example tests** cover:

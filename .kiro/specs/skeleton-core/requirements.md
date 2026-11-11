@@ -7,7 +7,7 @@
 ## Glossary
 
 - **Core**: The `packages/skeleton-core` package — shared engine and extension contracts only.
-- **CodeTrail**: A keyword plus one or more legs that traces a path through the NEC code book to an answer. Each leg is an ordered, non-empty list of `{ level, value }` steps. Allowed levels: `chapter`, `article`, `part`, `section`, `table`, `notes`, `annex`. A trail may have more than one leg when a section cross-references another location in the book.
+- **CodeTrail**: A keyword plus one or more legs that traces a path through the NEC code book to an answer. Each leg is an ordered, non-empty list of `{ level, value }` steps. Allowed levels: `chapter`, `article`, `part`, `section`, `table`, `notes`, `annex`, `index`. A trail may have more than one leg when a section cross-references another location in the book.
 - **TrailGrader**: The Core module that evaluates a user's step-by-step picks against one or more valid `CodeTrail` values declared by a drill and returns a graded result.
 - **CalcPlugin**: A calculator module that conforms to the `defineCalcPlugin` contract.
 - **CalcInput**: The typed input descriptor declared by a `CalcPlugin`.
@@ -15,7 +15,7 @@
 - **Invariant**: A named check declared by a `CalcPlugin`. It carries an `id`, a `description`, and a pure `check: (input, output) => boolean`. The fast-check arbitrary that drives it is supplied by the test file, not stored in the plugin.
 - **TrailLeg**: An ordered, non-empty array of `{ level, value }` steps within a `CodeTrail`.
 - **TrailStep**: A single `{ level: TrailLevel; value: string }` object within a `TrailLeg`.
-- **TrailLevel**: One of the string literals `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex"`.
+- **TrailLevel**: One of the string literals `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex" | "index"`.
 - **ALLOWED_LEVELS**: The exported readonly tuple of all valid `TrailLevel` values, replacing the former `TRAIL_STEPS` constant.
 - **NO_PARTS**: The exported string constant `"NONE"` used by a user to indicate they believe a trail has no part step.
 - **movedFrom**: An optional `CodeTrail` on a `CodeTrailDef` recording where the same answer was located in the 2023 NEC edition.
@@ -33,8 +33,8 @@
 
 #### Acceptance Criteria
 
-1. THE Core SHALL export a `TrailLevel` type defined as the union `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex"`.
-2. THE Core SHALL export an `ALLOWED_LEVELS` constant typed as a `readonly` tuple listing every `TrailLevel` value in the order: `["chapter", "article", "part", "section", "table", "notes", "annex"]`, such that the TypeScript compiler rejects any mutation or reordering of its elements.
+1. THE Core SHALL export a `TrailLevel` type defined as the union `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex" | "index"`.
+2. THE Core SHALL export an `ALLOWED_LEVELS` constant typed as a `readonly` tuple listing every `TrailLevel` value in the order: `["chapter", "article", "part", "section", "table", "notes", "annex", "index"]`, such that the TypeScript compiler rejects any mutation or reordering of its elements.
 3. THE Core SHALL export a `TrailStep` type defined as `{ level: TrailLevel; value: string }` where `value` is a non-empty string of 1–200 characters.
 4. THE Core SHALL export a `TrailLeg` type defined as a `readonly` non-empty array of `TrailStep` values.
 5. THE Core SHALL export a `CodeTrail` type defined as `{ keyword: string; legs: readonly TrailLeg[] }` where `keyword` is a non-empty string of 1–200 characters and `legs` contains at least one `TrailLeg`.
@@ -42,15 +42,17 @@
 7. WHEN `validateCodeTrail` is called on a `CodeTrail` whose `keyword` is an empty string, THE function SHALL return a failure identifying the `keyword` field as invalid.
 8. WHEN `validateCodeTrail` is called on a `CodeTrail` whose `legs` array is empty, THE function SHALL return a failure indicating at least one leg is required.
 9. FOR EACH leg in a `CodeTrail`, WHEN `validateCodeTrail` is called, THE function SHALL enforce these structural rules:
-   a. A leg's first step MUST have level `"chapter"`, `"annex"`, or `"article"` (the last only when the article is the introduction that precedes Chapter 1 — illustrative example: Article 90).
+   a. A leg's first step MUST have level `"chapter"`, `"annex"`, `"index"`, or `"article"` (the last only when the article is the introduction that precedes Chapter 1 — illustrative example: Article 90).
    b. Within Chapters 1 through 8 (illustrative, unverified): a leg proceeds from `"chapter"` → `"article"` → optional `"part"` → one or more of `"section"` and/or `"table"` → optional `"notes"`. A leg MAY end at `"section"`, `"table"`, or `"notes"`.
    c. Within Chapter 9 (illustrative, unverified): a leg proceeds from `"chapter"` → `"table"` → optional `"notes"`. No `"article"`, `"part"`, or `"section"` steps are permitted.
    d. An annex leg proceeds from `"annex"` → `"table"` → optional `"notes"`.
-   e. Any leg that does not conform to rules (a)–(d) SHALL produce a failure identifying the leg index and the offending step.
-10. WHEN `validateCodeTrail` is called on a `CodeTrail` with more than one leg, THE function SHALL validate each leg independently using rules 9a–9e, and SHALL return all failures across all legs in a single result.
+   e. An index leg models looking the keyword up in the book's index and going straight to the answer. It proceeds from `"index"` → exactly one step of level `"section"` or `"table"` → optional `"notes"`. No `"chapter"`, `"article"`, or `"part"` steps and no repeated `"section"` or `"table"` steps are permitted in an index leg.
+   f. Any leg that does not conform to rules (a)–(e) SHALL produce a failure identifying the leg index and the offending step.
+10. WHEN `validateCodeTrail` is called on a `CodeTrail` with more than one leg, THE function SHALL validate each leg independently using rules 9a–9f, and SHALL return all failures across all legs in a single result.
 11. THE Core SHALL export an `extractFirstNumber` function that accepts a string and returns the first contiguous run of ASCII digit characters (`0`–`9`) found in the string as a `number`, or `null` if the string contains no digit characters. Only the first digit run is returned; any subsequent digit runs are ignored. (Illustrative examples, not NEC citations: `"Chapter 9"` → `9`; `"Article 90"` → `90`; `"no digits here"` → `null`; `"3-wire 12"` → `3`.)
 12. THE Core SHALL use `extractFirstNumber` within `validateCodeTrail` to identify chapter number and article number from step values: a chapter step whose value yields `null` from `extractFirstNumber` is a validation failure; a leg may start at `"article"` only when `extractFirstNumber` applied to the article step's value returns `90` (illustrative, unverified); a chapter step is treated as Chapter 9 (illustrative, unverified) when `extractFirstNumber` returns `9`.
 13. THE Core SHALL verify with fast-check the following three properties for `extractFirstNumber`: (a) for any string constructed as digits-only it returns those digits as a number; (b) for any string containing no ASCII digit characters it returns `null`; (c) for any string containing two or more digit runs separated by non-digit characters, it returns the value of the first run only.
+14. THE Core SHALL verify with fast-check that `validateCodeTrail` accepts every generated valid trail, including trails containing index legs, and rejects generated invalid index legs (for example `"index"` followed by two `"section"` steps, `"index"` followed by an `"article"` step, or `"index"` with no following step).
 
 ---
 
@@ -73,7 +75,7 @@
 11. WHEN a valid trail in `trails` DOES contain a step with level `"part"`, AND the user submits a pick `{ level: "part", value: NO_PARTS }` at that position, THE `gradeTrail` function SHALL mark that step's verdict as `"incorrect"`.
 12. THE `gradeTrail` function SHALL be pure and deterministic: it SHALL read no module-level mutable state, write no module-level mutable state, and produce no observable effects beyond returning its value.
 13. THE Core SHALL verify with fast-check that for all valid `DrillDef` inputs and corresponding user-pick arrays, calling `gradeTrail` twice with the same arguments returns `GradeResult` values that are structurally equal at every field (determinism property).
-14. THE Core SHALL verify with fast-check that for any `CodeTrail` declared in `trails`, constructing user picks directly from that trail's step values and passing them to `gradeTrail` always returns `matched: true` (any declared valid trail grades fully correct against itself).
+14. THE Core SHALL verify with fast-check that for any `CodeTrail` declared in `trails`, constructing user picks directly from that trail's step values (with the generated trails including trails with index legs) and passing them to `gradeTrail` always returns `matched: true` (any declared valid trail grades fully correct against itself).
 15. THE Core SHALL verify with fast-check that for any `CodeTrail` in `trails` that contains no `"part"` step, a pick array that includes `{ level: "part", value: NO_PARTS }` at the part position produces the same `matched` result as a pick array that omits the part position entirely (`NO_PARTS` equivalence property).
 16. WHEN grading against a trail that contains no `"part"` step, THE `gradeTrail` function SHALL first strip any pick whose `level` is `"part"` and whose `value` is `NO_PARTS` from the picks array before aligning remaining picks to the trail steps by index, so that subsequent picks remain correctly aligned without requiring the UI to reindex.
 
@@ -129,7 +131,7 @@
 
 ### Requirement 6: defineCodeTrail — Drill-Pack Contract
 
-**User Story:** As a developer building a drill pack for Midnight Code Hunt, I want a typed contract function that forces me to declare one or more valid trails, an optional previous-edition trail, and a hint, so that drill packs are self-describing, support multi-trail answers, and let the UI distinguish old-edition picks from plain misses.
+**User Story:** As a developer building a drill pack for Midnight Code Hunt, I want a typed contract function that forces me to declare one or more valid trails, an optional previous-edition trail, an optional edition note, and a hint, so that drill packs are self-describing, support multi-trail answers, and let the UI distinguish old-edition picks from plain misses.
 
 #### Acceptance Criteria
 
@@ -140,6 +142,9 @@
 5. WHEN `validateCodeTrail` is called on a `CodeTrailDef`, THE function SHALL validate every `CodeTrail` in the `trails` array using the structural rules in Requirement 1, and SHALL return all failures across all trails in a single result.
 6. WHEN `validateCodeTrail` is called on a `CodeTrailDef` that includes a `movedFrom` trail, THE function SHALL also validate the `movedFrom` trail using the structural rules in Requirement 1 and include any failures in the result.
 7. WHERE a `CodeTrailDef` includes an optional `tableValues` field, THE Core SHALL type that field as `ReadonlyArray<TableValue>` so that any table-sourced data in a drill pack conforms to the `TableValue` shape.
+8. THE `CodeTrailDef` type SHALL include an optional `editionNote` field typed as a string of 1–300 characters, for drills where the answer itself changed between editions, not only its location. THE UI SHALL show the `editionNote` alongside the `matchedMovedFrom` feedback; `gradeTrail` and `GradeResult` are unchanged, and the UI reads `editionNote` from the drill definition.
+9. WHEN `validateCodeTrail` is called on a `CodeTrailDef` whose `editionNote` is present and is empty or longer than 300 characters, THE function SHALL return a failure identifying `editionNote` as invalid.
+10. THE Core SHALL verify with fast-check that `editionNote` strings of 1–300 characters validate ok, and that `editionNote` strings of length 0 or over 300 characters are rejected.
 
 ---
 
@@ -171,3 +176,4 @@
 4. WHEN the Core package is built in isolation (without the app packages present), THE build SHALL complete without errors.
 5. THE Core package SHALL NOT contain any NEC table data files, drill pack definitions, or calculator plug-in implementations specific to either app.
 6. IF the Core package's built output (e.g., `dist/`) contains any file that, when statically analyzed, includes an import of `fast-check`, THEN the build verification SHALL report a failure and exit with a non-zero status code.
+7. THE repository root `package.json` SHALL be marked `"private": true` and SHALL declare npm workspaces containing `packages/*` only; each app folder (`midnight-code-hunt`, `dead-circuit-check`) is added to the workspaces list when that app is created.
