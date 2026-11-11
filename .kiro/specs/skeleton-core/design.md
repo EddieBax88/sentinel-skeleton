@@ -146,7 +146,7 @@ Each leg is validated as a sequence of `TrailStep` values. The validator walks t
 | **Chapter 9** | `"chapter"` whose `extractFirstNumber(value) === 9` | `table` → optional `notes`. No `article`, `part`, or `section`. | `table`, `notes` |
 | **Annex** | `"annex"` | `table` → optional `notes` | `table`, `notes` |
 | **Article 90 intro** | `"article"` whose `extractFirstNumber(value) === 90` | `section` → optional `notes` | `section`, `notes` |
-| **Index** | `"index"` | Exactly one `section` or `table`, then optional `notes`. No `chapter`, `article`, or `part` steps and no repeated `section` / `table` steps. | `section`, `table`, `notes` |
+| **Index** | `"index"` | One or more `section` / `table` steps (repeats allowed, so lettered and numbered subdivisions are separate `section` steps), then optional `notes`. No `chapter`, `article`, or `part` steps. A lone `index` is invalid. Rationale: the Index route is the index entry path, then the section number the Index gives, then the subdivisions, in a single leg; the section number appears once. | `section`, `table`, `notes` |
 
 #### extractFirstNumber helper
 
@@ -580,7 +580,8 @@ State S2_index (after index):
   section | table → S6_index
   otherwise  → FAIL
 
-State S6_index:
+State S6_index (repeating; leg may end here):
+  section | table → S6_index
   notes      → S7_terminal
   [end]      → OK
   otherwise  → FAIL
@@ -598,7 +599,7 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ### Property 1: Valid CodeTrail passes validation
 
-*For any* CodeTrail object whose keyword is non-empty, whose legs array is non-empty, and whose steps conform to the per-leg structural rules, `validateCodeTrail` SHALL return `{ ok: true }`. Generators include trails with index legs (`"index"` → one `section` or `table` → optional `notes`).
+*For any* CodeTrail object whose keyword is non-empty, whose legs array is non-empty, and whose steps conform to the per-leg structural rules, `validateCodeTrail` SHALL return `{ ok: true }`. Generators include trails with index legs (`"index"` → one or more `section` and/or `table` steps, including repeated steps → optional `notes`).
 
 **Validates: Requirements 1.1, 1.2, 1.6, 1.9, 1.10, 1.14**
 
@@ -606,7 +607,7 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ### Property 2: Invalid CodeTrail always produces failures
 
-*For any* CodeTrail object that violates at least one structural rule (empty keyword, empty legs, or a malformed step sequence), `validateCodeTrail` SHALL return `{ ok: false }` with a non-empty `failures` array identifying the offending field. Generators include invalid index legs: `"index"` followed by two `section` steps, `"index"` followed by an `article` step, and `"index"` with no following step.
+*For any* CodeTrail object that violates at least one structural rule (empty keyword, empty legs, or a malformed step sequence), `validateCodeTrail` SHALL return `{ ok: false }` with a non-empty `failures` array identifying the offending field. Generators include invalid index legs: `"index"` followed by an `article` step, `"index"` followed by a `part` step, and a lone `"index"` with no following step. (`"index"` followed by a `section` and then another `section` is valid and is covered by Property 1.)
 
 **Validates: Requirements 1.7, 1.8, 1.9, 1.14**
 
@@ -725,7 +726,7 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 | `validateCodeTrail` on empty `keyword` | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "keyword", message: "..." }] }` |
 | `validateCodeTrail` on empty `legs` | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "legs", message: "..." }] }` |
 | `validateCodeTrail` on malformed step sequence | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` for each offending step, all legs validated independently |
-| `validateCodeTrail` on malformed index leg (e.g. `"index"` followed by two `section` steps, followed by an `article`, or with no following step) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` identifying the leg index and offending step; non-throwing |
+| `validateCodeTrail` on malformed index leg (e.g. `"index"` followed by an `article` or `part` step, or a lone `"index"` with no following `section`/`table` step) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` identifying the leg index and offending step; non-throwing |
 | `validateCodeTrail` on `CodeTrailDef` with invalid `editionNote` (empty or over 300 characters) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "editionNote", message: "..." }] }`; non-throwing |
 | `makeTableValue` called with empty `source` | `src/table/makeTableValue.ts` | Throws `Error("makeTableValue: source must be a non-empty string")` |
 | `createRegistry().register` called with an absent, non-string, or empty `id` | `src/registry/createRegistry.ts` | Throws `Error("PluginRegistry: entry id must be a non-empty string")` (indicates an invalid id); registry unchanged |
@@ -768,7 +769,7 @@ packages/skeleton-core/
 ### Dual testing approach
 
 **Property-based tests** cover:
-- Properties 1–15 as universally quantified assertions across generated inputs. Trail generators for Properties 1, 2, and 3 include index legs (valid and invalid); Property 14 generates `editionNote` strings of length 0, 1-300, and over 300.
+- Properties 1–15 as universally quantified assertions across generated inputs. Trail generators for Properties 1, 2, and 3 include index legs (valid, including repeated `section`/`table` steps, and invalid: article, part, or lone `index`); Property 14 generates `editionNote` strings of length 0, 1-300, and over 300.
 - Each property test references its property number in a comment.
 
 **Unit / example tests** cover:

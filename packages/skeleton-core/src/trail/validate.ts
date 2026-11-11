@@ -84,7 +84,12 @@ function validateLeg(
     ch9: { chapter: ["table"], table: ["notes"], notes: [] },
     annex: { annex: ["table"], table: ["notes"], notes: [] },
     art90: { article: ["section"], section: ["notes"], notes: [] },
-    index: { index: ["section", "table"], section: ["notes"], table: ["notes"], notes: [] },
+    index: {
+      index: ["section", "table"],
+      section: ["section", "table", "notes"],
+      table: ["section", "table", "notes"],
+      notes: [],
+    },
   };
   const endable: readonly TrailLevel[] = ["section", "table", "notes"];
 

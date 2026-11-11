@@ -105,8 +105,8 @@ const art90Leg = fc
   .tuple(label, optNotes)
   .map(([sec, n]) => [step('article', 'Article 90'), step('section', sec), ...(n ? [n] : [])]);
 const indexLeg = fc
-  .tuple(label, sectionOrTable, optNotes)
-  .map(([k, st, n]) => [step('index', k), st, ...(n ? [n] : [])]);
+  .tuple(label, fc.array(sectionOrTable, { minLength: 1, maxLength: 5 }), optNotes)
+  .map(([k, tail, n]) => [step('index', k), ...tail, ...(n ? [n] : [])]);
 
 const validLeg = fc.oneof(mainLeg, ch9Leg, annexLeg, art90Leg, indexLeg);
 const validTrail = fc
@@ -114,10 +114,10 @@ const validTrail = fc
   .map(([k, legs]) => mkTrail(k, legs));
 
 const invalidIndexLeg = fc.oneof(
-  // index + two section steps
-  fc.tuple(label, label, label).map(([k, a, b]) => [step('index', k), step('section', a), step('section', b)]),
   // index + article
   fc.tuple(label, label).map(([k, a]) => [step('index', k), step('article', a)]),
+  // index + part
+  fc.tuple(label, label).map(([k, p]) => [step('index', k), step('part', p)]),
   // lone index
   label.map((k) => [step('index', k)]),
 );
@@ -216,11 +216,22 @@ describe('validateCodeTrail unit tests', () => {
     ['ch9 with article', [step('chapter', 'Chapter 9'), step('article', 'a'), step('section', 's')]],
     ['annex with section', [step('annex', 'A'), step('section', 's')]],
     ['ends at article', [step('chapter', 'Chapter 3'), step('article', '300')]],
-    ['index+two sections', [step('index', 'k'), step('section', 'a'), step('section', 'b')]],
     ['index+article', [step('index', 'k'), step('article', 'a')]],
+    ['index+part', [step('index', 'k'), step('part', 'a')]],
+    ['index+section+article', [step('index', 'k'), step('section', 's'), step('article', 'a')]],
     ['lone index', [step('index', 'k')]],
   ])('malformed %s fails', (_n, leg) => {
     expect(ok([leg as TrailStep[]]).ok).toBe(false);
+  });
+
+  it('index -> section -> section -> section validates ok, with and without notes', () => {
+    const base = [step('index', 'k'), step('section', 'a'), step('section', 'b'), step('section', 'c')];
+    expect(ok([base])).toEqual({ ok: true });
+    expect(ok([[...base, step('notes', 'n')]])).toEqual({ ok: true });
+  });
+
+  it('index -> article fails', () => {
+    expect(ok([[step('index', 'k'), step('article', 'a')]]).ok).toBe(false);
   });
 
   it('unknown first step fails with a message listing valid starts', () => {

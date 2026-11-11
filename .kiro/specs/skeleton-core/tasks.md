@@ -52,8 +52,8 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
   - [x] 4.3 Implement `validateCodeTrail` and its exported types in `src/trail/validate.ts`
     - Export `ValidationFailure` (`{ field: string; message: string }`) and `ValidationResult` (`{ ok: true } | { ok: false; failures: ValidationFailure[] }`)
     - Implement the per-leg state machine (S0 → S1_main / S1_ch9 / S2_annex / S2_index / S3_art90 and their substates) exactly as specified in the design
-    - Add the index start state: `"index"` → exactly one `"section"` or `"table"` → optional `"notes"`; reject `"chapter"`, `"article"`, or `"part"` steps, repeated `"section"` / `"table"` steps, and an `"index"` step with no following step
-    - Unknown first step is a validation failure; its message lists the valid starts: chapter, annex, index, and article (Article 90 only)
+    - Add the index start state: `"index"` → one or more `"section"` and/or `"table"` steps (repeats allowed; S6_index loops) → optional `"notes"`; reject `"chapter"`, `"article"`, or `"part"` steps and an `"index"` step with no following `"section"` / `"table"` step
+    - Unknown first step is a validation failure; its message lists the valid starts: chapter, annex, index, and article (Article 90 only). A leg that starts with `"index"` is never an unknown first step; it is routed to S2_index
     - Reject empty `keyword`, empty `legs`, and any step sequence that violates the state machine
     - Accept a `CodeTrail` or `CodeTrailDef` (use a type-only import of `CodeTrailDef`); for the latter validate every trail in `trails` plus the optional `movedFrom`, collecting all failures into one result
     - When given a `CodeTrailDef`, check that `editionNote` (if present) is 1-300 characters; otherwise report a failure with field `"editionNote"`
@@ -61,8 +61,8 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - _Requirements: 1.6, 1.7, 1.8, 1.9, 1.10, 1.12, 6.5, 6.6, 6.9_
 
   - [x] 4.4 Write property tests for `validateCodeTrail` in `src/trail/validate.test.ts`
-    - **Property 1: valid CodeTrail passes validation** — generators include valid index legs (`"index"` → one `section` or `table` → optional `notes`)
-    - **Property 2: invalid CodeTrail always produces failures** — generators include invalid index legs: `"index"` followed by two `section` steps, `"index"` followed by an `article` step, and `"index"` with no following step
+    - **Property 1: valid CodeTrail passes validation** — generators include valid index legs (`"index"` → one or more `section` and/or `table` steps, including repeated steps → optional `notes`)
+    - **Property 2: invalid CodeTrail always produces failures** — generators include invalid index legs: `"index"` followed by an `article` step, `"index"` followed by a `part` step, and a lone `"index"` with no following step; `"index"` followed by a `section` then another `section` is valid
     - **Validates: Requirements 1.6, 1.7, 1.8, 1.9, 1.10, 1.14**
     - Also add unit tests: empty keyword fails, empty legs fails, each path kind (ch1–8, ch9, annex, article 90, index) produces a valid result with a correctly formed leg; malformed step sequences produce `ok: false`; unknown first step fails with a message listing the valid starts
 
@@ -72,7 +72,7 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - Export `TrailVerdict`, `StepResult`, `GradeResult`, `DrillDef`, and `UserPick` (`{ readonly level: TrailLevel; readonly value: string }`) types
     - Export `gradeTrail(drill: DrillDef, picks: readonly UserPick[]): GradeResult` following the flatten → strip-NO_PARTS → align-by-index → best-match algorithm from the design
     - Ensure level mismatches are always `"incorrect"`, unmatched positions are `"unanswered"`, and the function reads/writes no module-level mutable state
-    - Index legs flatten like any other leg (`index`, then `section` or `table`, then optional `notes`) with no special-casing
+    - Index legs flatten like any other leg (`index`, then one or more `section` / `table` steps, then optional `notes`) with no special-casing
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.16_
 
   - [x] 5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`

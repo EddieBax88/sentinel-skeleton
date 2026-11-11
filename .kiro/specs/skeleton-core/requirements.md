@@ -29,7 +29,7 @@
 
 ### Requirement 1: CodeTrail Type and Structure
 
-**User Story:** As a developer building either app, I want a single canonical type that models the NEC Navigation Method path through the code book, so that both apps and all calculators describe answers the same way regardless of which chapters or levels a particular answer passes through.
+**User Story:** As a developer building either app, I want a single canonical type that models the path through the code book that both public lookup methods (Index Keyword Lookup and Table of Contents Lookup) use, so that both apps and all calculators describe answers the same way regardless of which chapters or levels a particular answer passes through.
 
 #### Acceptance Criteria
 
@@ -46,13 +46,13 @@
    b. Within Chapters 1 through 8 (illustrative, unverified): a leg proceeds from `"chapter"` → `"article"` → optional `"part"` → one or more of `"section"` and/or `"table"` → optional `"notes"`. A leg MAY end at `"section"`, `"table"`, or `"notes"`.
    c. Within Chapter 9 (illustrative, unverified): a leg proceeds from `"chapter"` → `"table"` → optional `"notes"`. No `"article"`, `"part"`, or `"section"` steps are permitted.
    d. An annex leg proceeds from `"annex"` → `"table"` → optional `"notes"`.
-   e. An index leg models looking the keyword up in the book's index and going straight to the answer. It proceeds from `"index"` → exactly one step of level `"section"` or `"table"` → optional `"notes"`. No `"chapter"`, `"article"`, or `"part"` steps and no repeated `"section"` or `"table"` steps are permitted in an index leg.
+   e. An index leg models looking the keyword up in the book's index and going straight to the answer. It proceeds from `"index"` → one or more steps of level `"section"` and/or `"table"` (repeated steps allowed, so lettered and numbered subdivisions can be separate `"section"` steps) → optional `"notes"`. An `"index"` step with no following `"section"` or `"table"` step is invalid. No `"chapter"`, `"article"`, or `"part"` steps are permitted in an index leg. Reason: the Index route is the index entry path, then the section number the Index gives, then the subdivisions, all in a single leg; the section number appears once.
    f. Any leg that does not conform to rules (a)–(e) SHALL produce a failure identifying the leg index and the offending step.
 10. WHEN `validateCodeTrail` is called on a `CodeTrail` with more than one leg, THE function SHALL validate each leg independently using rules 9a–9f, and SHALL return all failures across all legs in a single result.
 11. THE Core SHALL export an `extractFirstNumber` function that accepts a string and returns the first contiguous run of ASCII digit characters (`0`–`9`) found in the string as a `number`, or `null` if the string contains no digit characters. Only the first digit run is returned; any subsequent digit runs are ignored. (Illustrative examples, not NEC citations: `"Chapter 9"` → `9`; `"Article 90"` → `90`; `"no digits here"` → `null`; `"3-wire 12"` → `3`.)
 12. THE Core SHALL use `extractFirstNumber` within `validateCodeTrail` to identify chapter number and article number from step values: a chapter step whose value yields `null` from `extractFirstNumber` is a validation failure; a leg may start at `"article"` only when `extractFirstNumber` applied to the article step's value returns `90` (illustrative, unverified); a chapter step is treated as Chapter 9 (illustrative, unverified) when `extractFirstNumber` returns `9`.
 13. THE Core SHALL verify with fast-check the following three properties for `extractFirstNumber`: (a) for any string constructed as digits-only it returns those digits as a number; (b) for any string containing no ASCII digit characters it returns `null`; (c) for any string containing two or more digit runs separated by non-digit characters, it returns the value of the first run only.
-14. THE Core SHALL verify with fast-check that `validateCodeTrail` accepts every generated valid trail, including trails containing index legs, and rejects generated invalid index legs (for example `"index"` followed by two `"section"` steps, `"index"` followed by an `"article"` step, or `"index"` with no following step).
+14. THE Core SHALL verify with fast-check that `validateCodeTrail` accepts every generated valid trail, including trails containing index legs, and accepts generated index legs that repeat steps (for example `"index"` followed by a `"section"` and then another `"section"`), and rejects generated invalid index legs (for example `"index"` followed by an `"article"` step, `"index"` followed by a `"part"` step, or a lone `"index"` with no following step).
 
 ---
 

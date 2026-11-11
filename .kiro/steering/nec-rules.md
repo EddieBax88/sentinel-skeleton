@@ -14,3 +14,4 @@ These rules apply to all generated text, UI copy, documentation, and code commen
 6. **No gendered language.** Official credential names (e.g., Journeyman Electrician) are acceptable; avoid gendered pronouns or other gendered terms.
 7. **No invented testimonials.** Do not fabricate quotes, reviews, or endorsements from users or instructors.
 8. **Never use the names Code Compass or NEC Co-Pilot anywhere.**
+9. **Never name a method by a step count.** Do not use "5-Step", "five steps", or "3 steps" (or any similar count) in method names, UI copy, drill data, or docs. The two methods are named Index Keyword Lookup and Table of Contents Lookup.

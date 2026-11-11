@@ -10,13 +10,15 @@ sentinel-skeleton is the Kiroween 2026 Skeleton Crew entry by Sentinel Learning 
 
 The `packages/skeleton-core` package powers both apps. It provides:
 
-1. **NEC Navigation Method** — every answer is displayed as a code-path trail: Keyword → Chapter → Article → Part → Section.
+1. **Two ways to find an answer in the code book** — every answer is displayed as a code-path trail. Only the steps actually taken are shown, and no method name or copy carries a step count:
+   - **Index Keyword Lookup** (the main method, always listed first and selected by default) — Keyword (the Index heading word alone), Index (the entry path and the number it gives), then Section (walk the headings down, including lettered and numbered subdivisions).
+   - **Table of Contents Lookup** (the second method) — Keyword, Chapter, Article, Part (only when the Article has Parts), Section. For a Chapter 9 table the steps are Keyword, Chapter, Table, Row.
 2. **Calculator plug-in contract** — every calculator ships with property-based tests and conforms to the `defineCalcPlugin` extension contract.
 3. **Exported extension contracts** — `defineCalcPlugin` and `defineCodeTrail` let a developer add a new calculator or drill pack without modifying core.
 
 ## App 1 — Midnight Code Hunt
 
-Timed drills where the user clicks each step of the code-path trail (keyword, chapter, article, part, section) against the clock. Includes drills covering articles that moved between the 2023 and 2026 NEC.
+Timed drills where the user works through the code-path trail against the clock, using Index Keyword Lookup (selected by default) or Table of Contents Lookup. The audience is exam takers who already know electrical terms, so the app gives no beginner hand-holding. Includes drills covering articles that moved between the 2023 and 2026 NEC.
 
 Theme: Sentinel dark — background `#050607`, primary `oklch(0.83 0.185 88)`.
 

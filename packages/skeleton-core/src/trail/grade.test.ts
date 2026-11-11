@@ -102,6 +102,35 @@ describe('gradeTrail properties', () => {
     );
   });
 
+  // Feature: skeleton-core, Property 3: self-match with repeated index section steps
+  it('Property 3: index trails with repeated section steps self-match', () => {
+    // **Validates: Requirements 2.6, 2.14**
+    const repeatedIndexTrail = fc
+      .tuple(
+        keyword,
+        value,
+        fc.array(
+          fc.record({ level: fc.constantFrom<TrailLevel>('section', 'table'), value }),
+          { minLength: 2, maxLength: 5 },
+        ),
+      )
+      .map(
+        ([k, iv, tail]) =>
+          ({
+            keyword: k,
+            legs: [[{ level: 'index', value: iv }, ...tail]],
+          }) as unknown as CodeTrail,
+      );
+    fc.assert(
+      fc.property(repeatedIndexTrail, (t) => {
+        const res = gradeTrail({ trails: [t] }, picksOf(t));
+        expect(res.matched).toBe(true);
+        expect(res.stepResults.every((r) => r.verdict === 'correct')).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
   // Feature: skeleton-core, Property 4: gradeTrail movedFrom discrimination
   it('Property 4: movedFrom picks give matchedMovedFrom without matched', () => {
     // **Validates: Requirements 2.7**
