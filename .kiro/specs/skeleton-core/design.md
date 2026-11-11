@@ -60,15 +60,17 @@ packages/skeleton-core/
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./test-utils": {
       "types": "./dist-test-utils/runInvariants.d.ts",
-      "import": "./dist-test-utils/runInvariants.js"
+      "default": "./dist-test-utils/runInvariants.js"
     }
   }
 }
 ```
+
+The `build:test-utils` script (`tsc -p tsconfig.test-utils.json`) builds against the referenced main project: `tsconfig.test-utils.json` declares `"references": [{ "path": "./tsconfig.json" }]`, so the main project's declarations (`dist/`) must exist before the test-utils entry point is compiled.
 
 ### Build tooling
 
@@ -203,6 +205,8 @@ export type GradeResult = {
 };
 ```
 
+On a trail with no `"part"` step, a `StepResult` with `level: "part"` is a synthetic entry that does not correspond to any step of the trail. `stepResults` normally has one entry per step of the graded trail; on a part-less trail it MAY additionally contain exactly one synthetic `{ level: "part", verdict: "incorrect" }` entry (see the algorithm below for its placement).
+
 #### DrillDef (input to gradeTrail)
 
 ```typescript
@@ -230,7 +234,9 @@ export function gradeTrail(
 #### Algorithm
 
 1. For each `CodeTrail` in `drill.trails`, flatten all legs into a single ordered array of `TrailStep` values.
-2. Before aligning, strip any pick from the picks array whose `level` is `"part"` and whose `value` equals `NO_PARTS`, but only when the flattened trail contains no step with level `"part"`. This keeps subsequent picks correctly index-aligned without requiring the UI to reindex.
+2. Before aligning, when the flattened trail contains no step with level `"part"`, remove EVERY pick from the picks array whose `level` is `"part"`, regardless of its `value`. This keeps subsequent picks correctly index-aligned without requiring the UI to reindex. If any removed pick's `value` was not `NO_PARTS`, record a `partMisfire` flag for this trail attempt (see step 2a). A `NO_PARTS` pick, or the absence of any part pick, does not set the flag. When the trail has a `"part"` step, nothing is removed and the behavior is unchanged.
+   - 2a. When `partMisfire` is set, the attempt cannot match that trail (`matched` is `false` for it), and `stepResults` for that trail MUST include exactly one synthetic `{ level: "part", verdict: "incorrect" }` entry. The remaining (real) steps are still graded on their own by index alignment against the remaining picks, so the synthetic entry never changes the verdict of any real step.
+   - 2b. **Placement of the synthetic entry** (flattened sequence of the trail, all legs concatenated in order): insert it immediately after the first step with level `"article"`, which is where the part step would sit. If the flattened sequence has no `"article"`-level step (for example a Chapter 9 leg, annex leg, or index leg), insert it immediately after the last step that precedes the first `"section"` or `"table"` step, that is, directly before that first `"section"`/`"table"` step. If the flattened sequence also has no `"section"` or `"table"` step, append it at the end. With multiple legs the rule is applied once to the whole flattened sequence, so exactly one synthetic entry is produced, never one per leg. This placement rule is confirmed: the synthetic part entry goes after the first article-level step; if there is none, immediately before the first section/table step; if there is none, at the end. Article 90 intro legs start with an `"article"` step, so the primary rule applies to them and the synthetic entry lands directly after that article step, before the `section`.
 3. Compare each remaining pick to the corresponding flattened step by index. A pick matches a step when `pick.level === step.level` AND the trimmed, lowercased `pick.value` equals the trimmed, lowercased `step.value`.
 4. A pick whose `level` does not match the step's `level` at that index is `"incorrect"` (level mismatch counts as wrong).
 5. If the trail does have a `"part"` step and the user submits a pick `{ level: "part", value: NO_PARTS }` at that index, that pick is `"incorrect"`.
@@ -443,23 +449,32 @@ export function createRegistry(): PluginRegistry {
 
   return {
     register(entry: RegistryEntry): void {
-      if (map.has(entry.id)) {
-        throw new Error(
-          `PluginRegistry: duplicate id "${entry.id}"`
-        );
+      const id: unknown = (entry as { id?: unknown } | null | undefined)?.id;
+      if (typeof id !== "string" || id.length === 0) {
+        throw new Error("PluginRegistry: entry id must be a non-empty string");
       }
-      map.set(entry.id, entry);
+      if (map.has(id)) {
+        throw new Error(`PluginRegistry: duplicate id "${id}"`);
+      }
+      map.set(id, entry);
       order.push(entry);
     },
     lookup(id: string): RegistryEntry | undefined {
       return map.get(id);
     },
     list(): ReadonlyArray<RegistryEntry> {
-      return order as ReadonlyArray<RegistryEntry>;
+      // Return a copy so callers cannot observe later mutations or affect internal order.
+      return order.slice();
     },
   };
 }
 ```
+
+Behavior (Req 7):
+
+- `register` first checks that `entry.id` is a non-empty string (absent, non-string, or empty throws an `Error` indicating an invalid id, and the registry is left unchanged), then checks for a duplicate. The duplicate error message contains the conflicting id. Both checks run before any mutation, so a failed `register` leaves `map` and `order` untouched.
+- `lookup` returns the exact reference passed to `register`, or `undefined` when the id is not registered.
+- `list` returns a NEW array (`order.slice()`) in insertion order on every call, so mutating the returned array does not alter the registry.
 
 ---
 
@@ -573,7 +588,7 @@ State S6_index:
 
 ### GradeResult computation
 
-User picks are aligned to a **flattened step sequence**. Flattening: for each leg in order, append each step in order. Each pick is a `{ level, value }` object. Before alignment, `gradeTrail` strips any `{ level: "part", value: NO_PARTS }` picks from the picks array when the flattened trail contains no `"part"` step, so subsequent picks remain correctly index-aligned. Matching then proceeds index-by-index: a pick matches its step when `level` values are equal and `value` strings are equal after trimming and lowercasing. A `level` mismatch at any index is `"incorrect"`.
+User picks are aligned to a **flattened step sequence**. Flattening: for each leg in order, append each step in order. Each pick is a `{ level, value }` object. Before alignment, when the flattened trail contains no `"part"` step, `gradeTrail` removes EVERY `"part"`-level pick from the picks array (whatever its value), so subsequent picks remain correctly index-aligned. If any removed pick's value was not `NO_PARTS`, the attempt cannot match that trail, and `stepResults` includes one synthetic `{ level: "part", verdict: "incorrect" }` entry inserted immediately after the `"article"` step (or, when the flattened sequence has no `"article"` step, immediately before the first `"section"`/`"table"` step; see algorithm step 2b, confirmed placement rule). The remaining steps are still graded on their own by index alignment. A `NO_PARTS` pick, or no part pick, adds no entry and leaves the attempt correct. When the trail has a `"part"` step, behavior is unchanged. Matching proceeds index-by-index: a pick matches its step when `level` values are equal and `value` strings are equal after trimming and lowercasing. A `level` mismatch at any index is `"incorrect"`. As a result, `stepResults` may contain one more entry than the trail has steps (the synthetic part entry) on part-less trails.
 
 ---
 
@@ -623,9 +638,9 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ### Property 6: NO_PARTS equivalence
 
-*For any* `CodeTrail` that contains no step with level `"part"`, a pick array that substitutes `NO_PARTS` at the part position and a pick array that omits that position entirely SHALL produce `GradeResult` values with identical `matched` outcomes.
+*For any* `CodeTrail` that contains no step with level `"part"`, a pick array that substitutes `NO_PARTS` at the part position and a pick array that omits that position entirely SHALL produce `GradeResult` values with identical `matched` outcomes and identical `stepResults` (neither contains a synthetic part entry).
 
-**Validates: Requirements 2.9, 2.10, 2.15**
+**Validates: Requirements 2.9, 2.10, 2.15, 2.19**
 
 ---
 
@@ -657,7 +672,7 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 *For any* `RegistryEntry` with a unique `id`, after calling `registry.register(entry)`, `registry.lookup(entry.id)` SHALL return the identical object reference that was passed to `register`.
 
-**Validates: Requirements 7.4, 7.7**
+**Validates: Requirements 7.5, 7.9**
 
 ---
 
@@ -665,7 +680,7 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 *For any* sequence of `register` calls with distinct ids, `registry.list().length` SHALL equal the number of `register` calls made.
 
-**Validates: Requirements 7.5, 7.6**
+**Validates: Requirements 7.7, 7.8**
 
 ---
 
@@ -695,6 +710,14 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 
 ---
 
+### Property 15: Extra non-NO_PARTS part pick on a part-less trail
+
+*For any* `CodeTrail` that contains no `"part"` step, and any pick array in which every pick matches the trail's steps except for one extra `"part"`-level pick whose `value` is not `NO_PARTS`, `gradeTrail` SHALL return `matched: false`, a verdict of `"correct"` for every real step of the trail, and exactly one `StepResult` with `level: "part"`, whose verdict is `"incorrect"`.
+
+**Validates: Requirements 2.16, 2.17, 2.18**
+
+---
+
 ## Error Handling
 
 | Condition | Location | Behavior |
@@ -705,7 +728,8 @@ User picks are aligned to a **flattened step sequence**. Flattening: for each le
 | `validateCodeTrail` on malformed index leg (e.g. `"index"` followed by two `section` steps, followed by an `article`, or with no following step) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [...] }` identifying the leg index and offending step; non-throwing |
 | `validateCodeTrail` on `CodeTrailDef` with invalid `editionNote` (empty or over 300 characters) | `src/trail/validate.ts` | Returns `{ ok: false, failures: [{ field: "editionNote", message: "..." }] }`; non-throwing |
 | `makeTableValue` called with empty `source` | `src/table/makeTableValue.ts` | Throws `Error("makeTableValue: source must be a non-empty string")` |
-| `createRegistry().register` called with duplicate `id` | `src/registry/createRegistry.ts` | Throws `Error('PluginRegistry: duplicate id "..."')` |
+| `createRegistry().register` called with an absent, non-string, or empty `id` | `src/registry/createRegistry.ts` | Throws `Error("PluginRegistry: entry id must be a non-empty string")` (indicates an invalid id); registry unchanged |
+| `createRegistry().register` called with duplicate `id` | `src/registry/createRegistry.ts` | Throws `Error('PluginRegistry: duplicate id "..."')`; message contains the conflicting id; registry unchanged |
 | `runInvariants` — `calculate` throws | `src-test-utils/runInvariants.ts` | Records `status: "fail"` with `counterexample` describing the throwing input; continues with remaining invariants |
 | `runInvariants` — no arbitrary supplied for an invariant `id` | `src-test-utils/runInvariants.ts` | Records `status: "fail"` with `counterexample` describing the missing arbitrary; continues |
 
@@ -730,7 +754,7 @@ packages/skeleton-core/
 └── src/
     ├── trail/
     │   ├── validate.test.ts      # Properties 1, 2, 14 + edge cases (generators include index legs)
-    │   └── grade.test.ts         # Properties 3, 4, 5, 6 + unit examples
+    │   └── grade.test.ts         # Properties 3, 4, 5, 6, 15 + unit examples (incl. part-less trail with extra part pick)
     ├── plugin/
     │   └── defineCalcPlugin.test.ts  # Property 7 + runInvariants unit tests
     ├── drill/
@@ -744,14 +768,21 @@ packages/skeleton-core/
 ### Dual testing approach
 
 **Property-based tests** cover:
-- Properties 1–14 as universally quantified assertions across generated inputs. Trail generators for Properties 1, 2, and 3 include index legs (valid and invalid); Property 14 generates `editionNote` strings of length 0, 1-300, and over 300.
+- Properties 1–15 as universally quantified assertions across generated inputs. Trail generators for Properties 1, 2, and 3 include index legs (valid and invalid); Property 14 generates `editionNote` strings of length 0, 1-300, and over 300.
 - Each property test references its property number in a comment.
 
 **Unit / example tests** cover:
 - `NO_PARTS` exported value equals `"NONE"` (Req 2.1).
+- Part-less trail with an extra `"part"` pick whose value is not `NO_PARTS` (Req 2.16–2.18): a main-chapter trail (chapter → article → section) yields `matched: false`, all real steps `"correct"`, and one synthetic `{ level: "part", verdict: "incorrect" }` entry immediately after the article entry.
+- Same scenario on a trail with no article step (an index leg and a Chapter 9 leg): the synthetic entry sits directly before the first `section`/`table` entry (Req 2.17, confirmed placement rule in algorithm step 2b).
+- Same scenario on an Article 90 intro leg (starts with an article step): the primary rule applies and the synthetic entry sits directly after the article entry.
+- Same scenario on a multi-leg trail: exactly one synthetic part entry is produced, not one per leg.
+- Part-less trail with an extra `NO_PARTS` pick, and with no part pick: no synthetic entry, `matched: true` (Req 2.17, 2.19).
+- Trail that has a `"part"` step with a `NO_PARTS` pick: the part step is `"incorrect"` and no synthetic entry is added (Req 2.11).
 - `ALLOWED_LEVELS` exact tuple value (Req 1.2).
 - `makeTableValue` throws on empty source (Req 5.4).
-- `register` throws on duplicate id (Req 7.3).
+- `register` throws on an absent, non-string, or empty id (Req 7.3).
+- `register` throws on duplicate id, with the id in the message (Req 7.4).
 - `runInvariants` with always-false invariant returns `status: "fail"` with non-empty `counterexample` (Req 3.8).
 - `runInvariants` with identity `calculate` and output-equals-input invariant returns all `status: "pass"` (Req 3.10).
 - `runInvariants` with throwing `calculate` records failure and continues (Req 3.9).

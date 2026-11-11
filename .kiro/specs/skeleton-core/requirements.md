@@ -64,8 +64,8 @@
 
 1. THE Core SHALL export a `NO_PARTS` constant equal to the string `"NONE"`, which a user may pick at a part step to indicate they believe the trail has no part.
 2. THE Core SHALL export a `TrailVerdict` type defined as the union `"correct" | "incorrect" | "unanswered"`.
-3. THE Core SHALL export a `StepResult` type defined as `{ level: TrailLevel; verdict: TrailVerdict }`.
-4. THE Core SHALL export a `GradeResult` type defined as `{ stepResults: StepResult[]; matched: boolean; matchedMovedFrom: boolean }`.
+3. THE Core SHALL export a `StepResult` type defined as `{ level: TrailLevel; verdict: TrailVerdict }`. On a trail with no `"part"` step, a `StepResult` with `level: "part"` is a synthetic entry that does not correspond to any step of the trail (see criterion 17).
+4. THE Core SHALL export a `GradeResult` type defined as `{ stepResults: StepResult[]; matched: boolean; matchedMovedFrom: boolean }`, where `stepResults` contains one entry per step of the trail being graded and, on a trail with no `"part"` step, MAY additionally contain exactly one synthetic `{ level: "part", verdict: "incorrect" }` entry (see criterion 17).
 5. THE Core SHALL export a `gradeTrail` function that accepts a `DrillDef` (containing a non-empty `trails` array of `CodeTrail` values and an optional `movedFrom: CodeTrail`) and a `readonly { level: TrailLevel; value: string }[]` array of picks aligned to the steps of the trail being tested, and returns a `GradeResult`.
 6. WHEN the user's picks match any one trail in the `trails` array (using case-insensitive trimmed comparison on each `value`), THE `gradeTrail` function SHALL return a `GradeResult` with `matched: true` and `matchedMovedFrom: false`.
 7. WHEN the user's picks match no trail in the `trails` array AND a `movedFrom` trail is present AND the picks match the `movedFrom` trail, THE `gradeTrail` function SHALL return a `GradeResult` with `matched: false` and `matchedMovedFrom: true`, so the UI can distinguish an old-edition answer from a plain miss.
@@ -77,7 +77,10 @@
 13. THE Core SHALL verify with fast-check that for all valid `DrillDef` inputs and corresponding user-pick arrays, calling `gradeTrail` twice with the same arguments returns `GradeResult` values that are structurally equal at every field (determinism property).
 14. THE Core SHALL verify with fast-check that for any `CodeTrail` declared in `trails`, constructing user picks directly from that trail's step values (with the generated trails including trails with index legs) and passing them to `gradeTrail` always returns `matched: true` (any declared valid trail grades fully correct against itself).
 15. THE Core SHALL verify with fast-check that for any `CodeTrail` in `trails` that contains no `"part"` step, a pick array that includes `{ level: "part", value: NO_PARTS }` at the part position produces the same `matched` result as a pick array that omits the part position entirely (`NO_PARTS` equivalence property).
-16. WHEN grading against a trail that contains no `"part"` step, THE `gradeTrail` function SHALL first strip any pick whose `level` is `"part"` and whose `value` is `NO_PARTS` from the picks array before aligning remaining picks to the trail steps by index, so that subsequent picks remain correctly aligned without requiring the UI to reindex.
+16. WHEN grading against a trail that contains no `"part"` step, THE `gradeTrail` function SHALL first remove every pick whose `level` is `"part"`, regardless of its `value`, from the picks array before aligning the remaining picks to the trail steps by index, so that subsequent picks remain correctly aligned without requiring the UI to reindex.
+17. WHEN grading against a trail that contains no `"part"` step, AND at least one removed `"part"`-level pick has a `value` other than `NO_PARTS`, THE `gradeTrail` function SHALL treat the attempt as unmatched for that trail (`matched` is `false` for that trail) AND SHALL include exactly one additional `StepResult` of `{ level: "part", verdict: "incorrect" }` in `stepResults`, placed immediately after the `"article"` step's entry, while grading every other step on its own against the aligned picks. WHEN every removed `"part"`-level pick has the value `NO_PARTS`, or no `"part"`-level pick is present, THE `gradeTrail` function SHALL add no `"part"` entry to `stepResults` and SHALL leave the attempt's correctness unaffected by the part picks (existing behavior from criteria 9 and 10).
+18. THE Core SHALL verify with fast-check that for any trail that contains no `"part"` step, a pick array in which every pick matches the trail's steps except for one extra `"part"`-level pick with a `value` other than `NO_PARTS` yields `matched: false`, a verdict of `"correct"` for every real step of the trail, and exactly one `StepResult` with `level: "part"`, whose verdict is `"incorrect"`.
+19. THE `NO_PARTS` equivalence property of criterion 15 SHALL continue to hold: for any trail that contains no `"part"` step, a pick array that includes `{ level: "part", value: NO_PARTS }` at the part position and a pick array that omits the part position SHALL produce the same `matched` result and the same `stepResults`.
 
 ---
 
@@ -155,12 +158,14 @@
 #### Acceptance Criteria
 
 1. THE Core SHALL export a `createRegistry` function that returns a new, empty `PluginRegistry` instance.
-2. THE `PluginRegistry` SHALL expose a `register` method that accepts a `CalcPlugin` or `CodeTrailDef` and stores it by its `id` field.
-3. WHEN `register` is called with an `id` that already exists in the registry, THE `PluginRegistry` SHALL throw an `Error` indicating a duplicate `id`.
-4. THE `PluginRegistry` SHALL expose a `lookup` method that accepts an `id` string and returns the registered plugin or drill pack, or `undefined` if not found.
-5. THE `PluginRegistry` SHALL expose a `list` method that returns a read-only array of all registered entries in insertion order.
-6. FOR ALL sequences of distinct-id registrations, `registry.list().length` SHALL equal the number of `register` calls made (invariant property, verified with fast-check).
-7. FOR ALL registered entries, `registry.lookup(entry.id)` SHALL return the same object that was passed to `register` (round-trip property, verified with fast-check).
+2. WHEN `register` is called with a `CalcPlugin` or `CodeTrailDef` whose `id` is a non-empty string, THE `PluginRegistry` SHALL store the entry keyed by its `id`.
+3. IF `register` is called with an entry whose `id` is absent, not a string, or an empty string, THEN THE `PluginRegistry` SHALL throw an `Error` indicating an invalid `id` and leave the registry unchanged.
+4. IF `register` is called with an `id` that already exists in the registry, THEN THE `PluginRegistry` SHALL throw an `Error` whose message contains the conflicting `id` string and leave the registry unchanged.
+5. WHEN `lookup` is called with an `id` that matches a registered entry, THE `PluginRegistry` SHALL return the exact object reference (`===`) that was passed to `register`.
+6. IF `lookup` is called with an `id` that matches no registered entry, THEN THE `PluginRegistry` SHALL return `undefined`.
+7. WHEN `list` is called, THE `PluginRegistry` SHALL return a new array containing all registered entries in insertion order, such that mutating the returned array does not alter the registry.
+8. FOR ALL sequences of up to 1000 distinct-id registrations, `registry.list().length` SHALL equal the number of `register` calls made (invariant property, verified with fast-check).
+9. FOR ALL registered entries, `registry.lookup(entry.id)` SHALL return the same reference (`===`) that was passed to `register` (round-trip property, verified with fast-check).
 
 ---
 

@@ -86,30 +86,30 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
 - [x] 6. Checkpoint — trail layer
   - Ensure all tests pass for `src/trail/`. Run `vitest --run` scoped to `src/trail/`. Ask the user if any questions arise before continuing.
 
-- [ ] 7. CalcPlugin types and `defineCalcPlugin`
-  - [ ] 7.1 Implement `src/plugin/types.ts`
+- [x] 7. CalcPlugin types and `defineCalcPlugin`
+  - [x] 7.1 Implement `src/plugin/types.ts`
     - Export `CalcInput`, `CalcOutput`, `Invariant<I, O>`, `InvariantReport`, `CalcPluginDef<I, O>`, and `CalcPlugin<I, O>` exactly as specified in the design
     - `Invariant` MUST NOT include any `fc.Arbitrary` field
     - `CalcPluginDef.trails` is typed as `(input: I) => readonly [CodeTrail, ...CodeTrail[]]`
     - `CalcPluginDef.invariants` is a non-empty tuple type
     - _Requirements: 3.2, 3.3, 3.4, 3.7, 4.1, 4.3_
 
-  - [ ] 7.2 Implement `src/plugin/defineCalcPlugin.ts`
+  - [x] 7.2 Implement `src/plugin/defineCalcPlugin.ts`
     - Export `defineCalcPlugin<I, O>(def: CalcPluginDef<I, O>): CalcPluginDef<I, O>` as a pure identity function
     - _Requirements: 3.1_
 
-  - [ ] 7.3 Write property test for `defineCalcPlugin` in `src/plugin/defineCalcPlugin.test.ts`
+  - [x] 7.3 Write property test for `defineCalcPlugin` in `src/plugin/defineCalcPlugin.test.ts`
     - **Property 7: defineCalcPlugin is identity (same object reference)**
     - **Validates: Requirements 3.1**
     - Also add a unit test confirming the TypeScript compiler errors when a required field is omitted (use `@ts-expect-error` comments) (Req 3.3)
 
-- [ ] 8. `runInvariants`
-  - [ ] 8.1 Implement `src-test-utils/runInvariants.ts`
+- [x] 8. `runInvariants`
+  - [x] 8.1 Implement `src-test-utils/runInvariants.ts`
     - Import `fast-check` here and **only** here within the package
     - Export `runInvariants<I, O>(plugin, arbitraries, options?)` following the design's implementation exactly: map each invariant, look up its arbitrary, run `fc.check(fc.property(...))`, catch throws from `calculate`, return `InvariantReport[]` without throwing; default `numRuns` is 100
     - _Requirements: 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [ ] 8.2 Write tests for `runInvariants` in `src/plugin/runInvariants.test.ts`
+  - [x] 8.2 Write tests for `runInvariants` in `src/plugin/runInvariants.test.ts`
     - Test: always-false invariant returns `status: "fail"` with non-empty `counterexample` (Req 3.9)
     - Test: identity `calculate` with output-equals-input invariant returns all `status: "pass"` with `counterexample: null` (Reqs 3.8, 3.11)
     - Test: throwing `calculate` records `status: "fail"` and continues remaining invariants (Req 3.10)
@@ -117,73 +117,73 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - **Property 12: calculate determinism** — for any `CalcPluginDef` and input, calling `calculate` twice returns recursively deeply equal outputs
     - **Validates: Requirements 3.8, 3.9, 3.10, 3.11, 4.2, 4.4**
 
-- [ ] 9. `TableValue` and `makeTableValue`
+- [x] 9. `TableValue` and `makeTableValue`
   - [x] 9.1 Implement `src/table/types.ts` and `src/table/makeTableValue.ts`
     - Export `TableValue` type with `value: number`, `source: string`, `nfpa_checked: boolean`
     - Export `makeTableValue(value, source, nfpa_checked?)` — throw `Error` on empty `source`, default `nfpa_checked` to `false`
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6_
 
-  - [ ] 9.2 Write property test for `makeTableValue` in `src/table/makeTableValue.test.ts`
+  - [x] 9.2 Write property test for `makeTableValue` in `src/table/makeTableValue.test.ts`
     - **Property 9: makeTableValue round-trip**
     - **Validates: Requirements 5.3, 5.5**
     - Also add unit tests: `makeTableValue("", …)` throws (Req 5.4); `nfpa_checked` defaults to `false` (Req 5.1)
 
-- [ ] 10. `defineCodeTrail`
+- [x] 10. `defineCodeTrail`
   - [x] 10.1 Implement `src/drill/types.ts` and `src/drill/defineCodeTrail.ts`
     - Export `CodeTrailDef` type with `id`, `label`, `trails`, `hint`, optional `movedFrom`, optional `editionNote` (string of 1-300 characters, shown by the UI alongside `matchedMovedFrom` feedback), optional `tableValues: ReadonlyArray<TableValue>`
     - `gradeTrail` and `GradeResult` are unchanged by `editionNote`
     - Export `defineCodeTrail(def: CodeTrailDef): CodeTrailDef` as a pure identity function
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.7, 6.8_
 
-  - [ ] 10.2 Write property test for `defineCodeTrail` in `src/drill/defineCodeTrail.test.ts`
+  - [x] 10.2 Write property test for `defineCodeTrail` in `src/drill/defineCodeTrail.test.ts`
     - **Property 8: defineCodeTrail is identity (same object reference)**
     - **Validates: Requirements 6.1**
     - Also add a unit test confirming the TypeScript compiler errors when a required field is omitted (Req 6.4)
 
-  - [ ] 10.3 Write property test for `editionNote` validation in `src/trail/validate.test.ts`
+  - [x] 10.3 Write property test for `editionNote` validation in `src/trail/validate.test.ts`
     - **Property 14: editionNote validation** — generate `editionNote` strings of length 0, 1-300, and over 300 on an otherwise valid `CodeTrailDef`; lengths 1-300 produce no failure with field `"editionNote"`, lengths 0 and over 300 produce a failure with field `"editionNote"`
     - **Validates: Requirements 6.8, 6.9, 6.10**
 
-- [ ] 11. `createRegistry`
-  - [ ] 11.1 Implement `src/registry/types.ts` and `src/registry/createRegistry.ts`
+- [x] 11. `createRegistry`
+  - [x] 11.1 Implement `src/registry/types.ts` and `src/registry/createRegistry.ts`
     - Export `RegistryEntry` as `CalcPlugin | CodeTrailDef`
     - Export `PluginRegistry` interface with `register`, `lookup`, and `list`
     - Implement `createRegistry()` using an internal `Map` + insertion-order array; throw `Error` on duplicate `id`
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ] 11.2 Write property tests for `createRegistry` in `src/registry/createRegistry.test.ts`
+  - [x] 11.2 Write property tests for `createRegistry` in `src/registry/createRegistry.test.ts`
     - **Property 10: Registry lookup round-trip**
     - **Property 11: Registry list length invariant**
     - **Validates: Requirements 7.4, 7.5, 7.6, 7.7**
     - Also add unit test: `register` throws on duplicate `id` (Req 7.3)
 
-- [ ] 12. Barrel export and package entry points
-  - [ ] 12.1 Implement `src/index.ts`
+- [x] 12. Barrel export and package entry points
+  - [x] 12.1 Implement `src/index.ts`
     - Re-export all public types and values from `trail/types`, `trail/validate`, `trail/grade`, `plugin/types`, `plugin/defineCalcPlugin`, `drill/types`, `drill/defineCodeTrail`, `table/types`, `table/makeTableValue`, `registry/types`, `registry/createRegistry`
     - Do NOT export `runInvariants` — it must remain behind the `./test-utils` entry point only
     - _Requirements: 3.5, 3.6, 8.1, 8.2, 8.5_
 
-  - [ ] 12.2 Verify the `./test-utils` entry point in `package.json` correctly resolves `src-test-utils/runInvariants.ts`
+  - [x] 12.2 Verify the `./test-utils` entry point in `package.json` correctly resolves `src-test-utils/runInvariants.ts`
     - Confirm `runInvariants` is importable as `@sentinel/skeleton-core/test-utils` from a test file
     - _Requirements: 3.5, 3.6, 8.6_
 
-- [ ] 13. Checkpoint — full package
+- [x] 13. Checkpoint — full package
   - Ensure `vitest --run` passes for all test files. Ask the user if any questions arise before continuing.
 
-- [ ] 14. Build verification
-  - [ ] 14.1 Run `tsc --noEmit` on the main `tsconfig.json`
+- [x] 14. Build verification
+  - [x] 14.1 Run `tsc --noEmit` on the main `tsconfig.json`
     - Fix any type errors revealed; confirm no `fast-check` import path appears anywhere under `src/`
     - _Requirements: 8.4, 8.6_
 
-  - [ ] 14.2 Run `tsc --noEmit` on `tsconfig.test-utils.json`
+  - [x] 14.2 Run `tsc --noEmit` on `tsconfig.test-utils.json`
     - Confirm `src-test-utils/runInvariants.ts` compiles cleanly against the main types
     - _Requirements: 3.6, 8.4_
 
-  - [ ] 14.3 Add a CI-friendly fast-check boundary check script
+  - [x] 14.3 Add a CI-friendly fast-check boundary check script
     - Write a small Node script (or `grep`-based npm script) that scans `dist/index.js` and all files it imports for the string `"fast-check"`; exits with non-zero status if found
     - _Requirements: 3.6, 8.6_
 
-- [ ] 15. Final checkpoint
+- [x] 15. Final checkpoint
   - Ensure all tests pass and all build steps succeed. Ask the user if any questions arise before concluding.
 
 ## Notes

@@ -3,6 +3,18 @@
     "5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`": {
       "status": "passed",
       "lastRunTimestamp": 1794376793748
+    },
+    "10.3 Write property test for `editionNote` validation in `src/trail/validate.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1794379193508
+    },
+    "11.2 Write property tests for `createRegistry` in `src/registry/createRegistry.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1794379332933
+    },
+    "8.2 Write tests for `runInvariants` in `src/plugin/runInvariants.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1794379339295
     }
   },
   "executionHistory": {
@@ -202,6 +214,269 @@
         "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
         "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
         "timestamp": 1794376812638
+      },
+      {
+        "executionId": "f0125bb2-e2db-490a-9351-cbe34fa44e18",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794377946107
+      }
+    ],
+    "7.1 Implement `src/plugin/types.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379153512
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379200258
+      }
+    ],
+    "10.3 Write property test for `editionNote` validation in `src/trail/validate.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379153527
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379201005
+      }
+    ],
+    "7.2 Implement `src/plugin/defineCalcPlugin.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379204213
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379233559
+      }
+    ],
+    "9.2 Write property test for `makeTableValue` in `src/table/makeTableValue.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379204806
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379234398
+      }
+    ],
+    "9. `TableValue` and `makeTableValue`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379234403
+      }
+    ],
+    "7.3 Write property test for `defineCalcPlugin` in `src/plugin/defineCalcPlugin.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379238404
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379300800
+      }
+    ],
+    "8.1 Implement `src-test-utils/runInvariants.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379239127
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379300822
+      }
+    ],
+    "10.2 Write property test for `defineCodeTrail` in `src/drill/defineCodeTrail.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379239996
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379301474
+      }
+    ],
+    "11.1 Implement `src/registry/types.ts` and `src/registry/createRegistry.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379240496
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379302296
+      }
+    ],
+    "7. CalcPlugin types and `defineCalcPlugin`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379300807
+      }
+    ],
+    "10. `defineCodeTrail`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379301478
+      }
+    ],
+    "8.2 Write tests for `runInvariants` in `src/plugin/runInvariants.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379305260
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379349014
+      }
+    ],
+    "11.2 Write property tests for `createRegistry` in `src/registry/createRegistry.test.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379305978
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379349034
+      }
+    ],
+    "8. `runInvariants`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379349019
+      }
+    ],
+    "11. `createRegistry`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379349036
+      }
+    ],
+    "12.1 Implement `src/index.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379360173
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379385272
+      }
+    ],
+    "12.2 Verify the `./test-utils` entry point in `package.json` correctly resolves `src-test-utils/runInvariants.ts`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379388213
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379426100
+      }
+    ],
+    "12. Barrel export and package entry points": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379426111
+      }
+    ],
+    "13. Checkpoint — full package": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379430057
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379444391
+      }
+    ],
+    "14.1 Run `tsc --noEmit` on the main `tsconfig.json`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379445101
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379467192
+      }
+    ],
+    "14.2 Run `tsc --noEmit` on `tsconfig.test-utils.json`": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379445615
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379467216
+      }
+    ],
+    "14.3 Add a CI-friendly fast-check boundary check script": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379469793
+      },
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379495750
+      }
+    ],
+    "14. Build verification": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379495758
+      }
+    ],
+    "15. Final checkpoint": [
+      {
+        "executionId": "f795b782-16c1-41b4-9301-5427b5a9917d",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794379496153
+      },
+      {
+        "executionId": "93b2322a-d316-4ba8-b989-11e33c1df430",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794418348806
+      },
+      {
+        "executionId": "93b2322a-d316-4ba8-b989-11e33c1df430",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794419626193
       }
     ]
   }

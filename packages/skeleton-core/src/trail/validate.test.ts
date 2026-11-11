@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractFirstNumber, validateCodeTrail } from './validate';
-import type { CodeTrail, TrailLevel, TrailStep } from './types';
+import { extractFirstNumber, validateCodeTrail } from './validate.js';
+import type { CodeTrail, TrailLevel, TrailStep } from './types.js';
+import { defineCodeTrail } from '../drill/defineCodeTrail.js';
 
 const digitChar = fc.constantFrom(...'0123456789'.split(''));
 const digitRun = fc
@@ -229,5 +230,53 @@ describe('validateCodeTrail unit tests', () => {
       const msg = r.failures.map((f) => f.message).join(' ');
       for (const w of ['chapter', 'annex', 'index', 'article']) expect(msg).toContain(w);
     }
+  });
+});
+
+// ---------- editionNote validation (CodeTrailDef) ----------
+
+const baseTrail: CodeTrail = mkTrail('grounding', [
+  [step('chapter', 'Chapter 2'), step('article', 'Article 250'), step('section', '250.50')],
+]);
+const defWith = (editionNote: string) =>
+  defineCodeTrail({
+    id: 'drill-1',
+    label: 'Drill',
+    trails: [baseTrail],
+    hint: 'A paraphrased hint.',
+    movedFrom: baseTrail,
+    editionNote,
+  });
+const editionNoteFailures = (editionNote: string) => {
+  const r = validateCodeTrail(defWith(editionNote));
+  return r.ok ? [] : r.failures.filter((f) => f.field === 'editionNote');
+};
+
+describe('editionNote validation properties', () => {
+  // Feature: skeleton-core, Property 14
+  it('Property 14: editionNote of length 1-300 yields no editionNote failure', () => {
+    // **Validates: Requirements 6.8, 6.9, 6.10**
+    fc.assert(
+      fc.property(fc.string({ minLength: 1, maxLength: 300 }), (note) => {
+        expect(editionNoteFailures(note)).toEqual([]);
+        expect(validateCodeTrail(defWith(note))).toEqual({ ok: true });
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: skeleton-core, Property 14
+  it('Property 14: editionNote of length 0 or over 300 yields an editionNote failure', () => {
+    // **Validates: Requirements 6.8, 6.9, 6.10**
+    const badNote = fc.oneof(
+      fc.constant(''),
+      fc.string({ minLength: 301, maxLength: 600 }),
+    );
+    fc.assert(
+      fc.property(badNote, (note) => {
+        expect(editionNoteFailures(note).length).toBeGreaterThan(0);
+      }),
+      { numRuns: 100 },
+    );
   });
 });

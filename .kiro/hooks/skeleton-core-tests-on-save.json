@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "skeleton-core tests on save",
+      "description": "Runs the skeleton-core Vitest suite whenever a .ts file under packages/skeleton-core/ is saved.",
+      "trigger": "PostFileSave",
+      "matcher": "packages/skeleton-core/.*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "npm test --workspace @sentinel/skeleton-core"
+      },
+      "timeout": 120
+    }
+  ]
+}

@@ -45,9 +45,11 @@ function flatten(trail: CodeTrail): TrailStep[] {
 function attempt(trail: CodeTrail, picks: readonly UserPick[]): Attempt {
   const steps = flatten(trail);
   const hasPart = steps.some((s) => s.level === "part");
-  const effective = hasPart
-    ? picks
-    : picks.filter((p) => !(p.level === "part" && p.value === NO_PARTS));
+  // On a part-less trail every part-level pick is removed; a non-NO_PARTS one
+  // is a misfire (design 2, 2a).
+  const effective = hasPart ? picks : picks.filter((p) => p.level !== "part");
+  const partMisfire =
+    !hasPart && picks.some((p) => p.level === "part" && p.value !== NO_PARTS);
 
   let correctCount = 0;
   const stepResults: StepResult[] = steps.map((step, i) => {
@@ -60,8 +62,24 @@ function attempt(trail: CodeTrail, picks: readonly UserPick[]): Attempt {
     return { level: step.level, verdict: ok ? "correct" : "incorrect" };
   });
 
+  if (partMisfire) {
+    // Design 2b: after the first article step; else before the first
+    // section/table step; else at the end.
+    const articleAt = steps.findIndex((s) => s.level === "article");
+    let at: number;
+    if (articleAt >= 0) at = articleAt + 1;
+    else {
+      const sectionAt = steps.findIndex(
+        (s) => s.level === "section" || s.level === "table",
+      );
+      at = sectionAt >= 0 ? sectionAt : stepResults.length;
+    }
+    stepResults.splice(at, 0, { level: "part", verdict: "incorrect" });
+  }
+
   // Extra picks beyond the trail's steps mean the answer is not an exact match.
-  const matched = correctCount === steps.length && effective.length === steps.length;
+  const matched =
+    !partMisfire && correctCount === steps.length && effective.length === steps.length;
   return { stepResults, correctCount, matched };
 }
 
