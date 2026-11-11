@@ -1,0 +1,27 @@
+{
+  "name": "@sentinel/skeleton-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./test-utils": {
+      "types": "./dist-test-utils/runInvariants.d.ts",
+      "default": "./dist-test-utils/runInvariants.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:test-utils": "tsc -p tsconfig.test-utils.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

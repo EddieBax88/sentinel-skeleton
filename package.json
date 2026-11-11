@@ -1,0 +1,7 @@
+{
+  "name": "sentinel-skeleton",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

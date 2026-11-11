@@ -1,0 +1,208 @@
+{
+  "pbtResults": {
+    "5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1794376793748
+    }
+  },
+  "executionHistory": {
+    "1.1 Create `package.json` at the repository root": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376458224
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376481020
+      }
+    ],
+    "1. Root workspace package.json": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376481023
+      }
+    ],
+    "2.1 Create the `packages/skeleton-core/` directory tree": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376484545
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376523873
+      }
+    ],
+    "2.2 Write `packages/skeleton-core/package.json`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376485008
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376524120
+      }
+    ],
+    "2.3 Write `packages/skeleton-core/tsconfig.json` and `tsconfig.test-utils.json`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376488009
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376525236
+      }
+    ],
+    "2. Scaffold the package": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376525239
+      }
+    ],
+    "3.1 Implement `src/trail/types.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376527780
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376550697
+      }
+    ],
+    "3. Trail types": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376550701
+      }
+    ],
+    "4.1 Implement `extractFirstNumber` in `src/trail/validate.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376557576
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376575319
+      }
+    ],
+    "9.1 Implement `src/table/types.ts` and `src/table/makeTableValue.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376584557
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376643459
+      }
+    ],
+    "4.2 Write property tests for `extractFirstNumber` in `src/trail/validate.test.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376649764
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376691293
+      }
+    ],
+    "4.3 Implement `validateCodeTrail` and its exported types in `src/trail/validate.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376649771
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376691371
+      }
+    ],
+    "4.4 Write property tests for `validateCodeTrail` in `src/trail/validate.test.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376704588
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376747063
+      }
+    ],
+    "5.1 Implement `src/trail/grade.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376704595
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376747084
+      }
+    ],
+    "10.1 Implement `src/drill/types.ts` and `src/drill/defineCodeTrail.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376704602
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376747533
+      }
+    ],
+    "4. `extractFirstNumber` and `validateCodeTrail`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376747067
+      }
+    ],
+    "5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376758877
+      },
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376802533
+      }
+    ],
+    "5. `gradeTrail`": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376802537
+      }
+    ],
+    "6. Checkpoint — trail layer": [
+      {
+        "executionId": "b8e9df33-1f7f-4cae-b8ac-9455db172763",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794376812638
+      }
+    ]
+  }
+}

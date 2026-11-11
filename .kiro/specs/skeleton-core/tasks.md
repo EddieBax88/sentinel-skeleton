@@ -6,31 +6,31 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
 
 ## Tasks
 
-- [ ] 1. Root workspace package.json
-  - [ ] 1.1 Create `package.json` at the repository root
+- [x] 1. Root workspace package.json
+  - [x] 1.1 Create `package.json` at the repository root
     - Set `"private": true` and `"workspaces": ["packages/*"]` only
     - Do NOT list `midnight-code-hunt` or `dead-circuit-check` in `workspaces`; each app is added when it is created
     - _Requirements: 8.7_
 
-- [ ] 2. Scaffold the package
-  - [ ] 2.1 Create the `packages/skeleton-core/` directory tree
+- [x] 2. Scaffold the package
+  - [x] 2.1 Create the `packages/skeleton-core/` directory tree
     - Create `src/trail/`, `src/plugin/`, `src/drill/`, `src/table/`, `src/registry/`, and `src-test-utils/` directories with `.gitkeep` placeholders (remove once files are added)
     - _Requirements: 8.1, 8.4_
 
-  - [ ] 2.2 Write `packages/skeleton-core/package.json`
+  - [x] 2.2 Write `packages/skeleton-core/package.json`
     - Set `"name": "@sentinel/skeleton-core"`, `"type": "module"`
     - Add `exports` field with two conditions: `"."` pointing to `dist/index.js` / `dist/index.d.ts` and `"./test-utils"` pointing to `dist-test-utils/runInvariants.js` / `dist-test-utils/runInvariants.d.ts`
     - List `vitest` and `fast-check` in `devDependencies` only — no runtime dependencies
     - Add `"scripts"`: `"build"`, `"build:test-utils"`, `"typecheck"`, `"test"` (using `vitest --run`)
     - _Requirements: 3.6, 8.3, 8.6_
 
-  - [ ] 2.3 Write `packages/skeleton-core/tsconfig.json` and `tsconfig.test-utils.json`
+  - [x] 2.3 Write `packages/skeleton-core/tsconfig.json` and `tsconfig.test-utils.json`
     - Main config: `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`, `"declaration": true`, `"declarationMap": true`, `"outDir": "dist"`, `"rootDir": "src"`
     - Test-utils config: same compiler options, `"rootDir": "src-test-utils"`, `"outDir": "dist-test-utils"`, references `src/` for type imports
     - _Requirements: 8.4_
 
-- [ ] 3. Trail types
-  - [ ] 3.1 Implement `src/trail/types.ts`
+- [x] 3. Trail types
+  - [x] 3.1 Implement `src/trail/types.ts`
     - Export `TrailLevel` as the union `"chapter" | "article" | "part" | "section" | "table" | "notes" | "annex" | "index"`
     - Export `ALLOWED_LEVELS` as `as const satisfies readonly TrailLevel[]` tuple in the canonical order, with `"index"` appended last: `["chapter", "article", "part", "section", "table", "notes", "annex", "index"]`
     - Export `TrailStep` as `{ readonly level: TrailLevel; readonly value: string }`
@@ -38,18 +38,18 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - Export `CodeTrail` as `{ readonly keyword: string; readonly legs: readonly [TrailLeg, ...TrailLeg[]] }`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 4. `extractFirstNumber` and `validateCodeTrail`
-  - [ ] 4.1 Implement `extractFirstNumber` in `src/trail/validate.ts`
+- [x] 4. `extractFirstNumber` and `validateCodeTrail`
+  - [x] 4.1 Implement `extractFirstNumber` in `src/trail/validate.ts`
     - Export `extractFirstNumber(s: string): number | null` — returns the numeric value of the first contiguous ASCII digit run, or `null` if none
     - _Requirements: 1.11_
 
-  - [ ] 4.2 Write property tests for `extractFirstNumber` in `src/trail/validate.test.ts`
+  - [x] 4.2 Write property tests for `extractFirstNumber` in `src/trail/validate.test.ts`
     - **Property 13a: digits-only string returns its numeric value**
     - **Property 13b: no-digit string returns null**
     - **Property 13c: first-run-only for multi-run strings**
     - **Validates: Requirements 1.11, 1.13**
 
-  - [ ] 4.3 Implement `validateCodeTrail` and its exported types in `src/trail/validate.ts`
+  - [x] 4.3 Implement `validateCodeTrail` and its exported types in `src/trail/validate.ts`
     - Export `ValidationFailure` (`{ field: string; message: string }`) and `ValidationResult` (`{ ok: true } | { ok: false; failures: ValidationFailure[] }`)
     - Implement the per-leg state machine (S0 → S1_main / S1_ch9 / S2_annex / S2_index / S3_art90 and their substates) exactly as specified in the design
     - Add the index start state: `"index"` → exactly one `"section"` or `"table"` → optional `"notes"`; reject `"chapter"`, `"article"`, or `"part"` steps, repeated `"section"` / `"table"` steps, and an `"index"` step with no following step
@@ -60,14 +60,14 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - Use `extractFirstNumber` to identify chapter 9, article 90, etc.
     - _Requirements: 1.6, 1.7, 1.8, 1.9, 1.10, 1.12, 6.5, 6.6, 6.9_
 
-  - [ ] 4.4 Write property tests for `validateCodeTrail` in `src/trail/validate.test.ts`
+  - [x] 4.4 Write property tests for `validateCodeTrail` in `src/trail/validate.test.ts`
     - **Property 1: valid CodeTrail passes validation** — generators include valid index legs (`"index"` → one `section` or `table` → optional `notes`)
     - **Property 2: invalid CodeTrail always produces failures** — generators include invalid index legs: `"index"` followed by two `section` steps, `"index"` followed by an `article` step, and `"index"` with no following step
     - **Validates: Requirements 1.6, 1.7, 1.8, 1.9, 1.10, 1.14**
     - Also add unit tests: empty keyword fails, empty legs fails, each path kind (ch1–8, ch9, annex, article 90, index) produces a valid result with a correctly formed leg; malformed step sequences produce `ok: false`; unknown first step fails with a message listing the valid starts
 
-- [ ] 5. `gradeTrail`
-  - [ ] 5.1 Implement `src/trail/grade.ts`
+- [x] 5. `gradeTrail`
+  - [x] 5.1 Implement `src/trail/grade.ts`
     - Export `NO_PARTS` constant (`"NONE" as const`)
     - Export `TrailVerdict`, `StepResult`, `GradeResult`, `DrillDef`, and `UserPick` (`{ readonly level: TrailLevel; readonly value: string }`) types
     - Export `gradeTrail(drill: DrillDef, picks: readonly UserPick[]): GradeResult` following the flatten → strip-NO_PARTS → align-by-index → best-match algorithm from the design
@@ -75,7 +75,7 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - Index legs flatten like any other leg (`index`, then `section` or `table`, then optional `notes`) with no special-casing
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.16_
 
-  - [ ] 5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`
+  - [x] 5.2 Write property tests for `gradeTrail` in `src/trail/grade.test.ts`
     - **Property 3: gradeTrail self-match (round-trip)** — generated trails include trails with index legs
     - **Property 4: gradeTrail movedFrom discrimination**
     - **Property 5: gradeTrail determinism**
@@ -83,7 +83,7 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - **Validates: Requirements 2.6, 2.7, 2.9, 2.10, 2.12, 2.13, 2.14, 2.15**
     - Also add unit tests: NO_PARTS pick on part-less trail is correct (Req 2.9); omitting part pick on part-less trail is correct (Req 2.10); NO_PARTS on part-present trail is incorrect (Req 2.11); `NO_PARTS === "NONE"` (Req 2.1)
 
-- [ ] 6. Checkpoint — trail layer
+- [x] 6. Checkpoint — trail layer
   - Ensure all tests pass for `src/trail/`. Run `vitest --run` scoped to `src/trail/`. Ask the user if any questions arise before continuing.
 
 - [ ] 7. CalcPlugin types and `defineCalcPlugin`
@@ -118,7 +118,7 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - **Validates: Requirements 3.8, 3.9, 3.10, 3.11, 4.2, 4.4**
 
 - [ ] 9. `TableValue` and `makeTableValue`
-  - [ ] 9.1 Implement `src/table/types.ts` and `src/table/makeTableValue.ts`
+  - [x] 9.1 Implement `src/table/types.ts` and `src/table/makeTableValue.ts`
     - Export `TableValue` type with `value: number`, `source: string`, `nfpa_checked: boolean`
     - Export `makeTableValue(value, source, nfpa_checked?)` — throw `Error` on empty `source`, default `nfpa_checked` to `false`
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6_
@@ -129,7 +129,7 @@ Build the `packages/skeleton-core` pure-TypeScript library from scratch, startin
     - Also add unit tests: `makeTableValue("", …)` throws (Req 5.4); `nfpa_checked` defaults to `false` (Req 5.1)
 
 - [ ] 10. `defineCodeTrail`
-  - [ ] 10.1 Implement `src/drill/types.ts` and `src/drill/defineCodeTrail.ts`
+  - [x] 10.1 Implement `src/drill/types.ts` and `src/drill/defineCodeTrail.ts`
     - Export `CodeTrailDef` type with `id`, `label`, `trails`, `hint`, optional `movedFrom`, optional `editionNote` (string of 1-300 characters, shown by the UI alongside `matchedMovedFrom` feedback), optional `tableValues: ReadonlyArray<TableValue>`
     - `gradeTrail` and `GradeResult` are unchanged by `editionNote`
     - Export `defineCodeTrail(def: CodeTrailDef): CodeTrailDef` as a pure identity function

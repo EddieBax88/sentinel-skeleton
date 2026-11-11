@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist-test-utils",
+    "rootDir": "src-test-utils",
+    "tsBuildInfoFile": "dist-test-utils/.tsbuildinfo"
+  },
+  "include": ["src-test-utils/**/*.ts"],
+  "exclude": ["dist-test-utils", "node_modules"],
+  "references": [{ "path": "./tsconfig.json" }]
+}
