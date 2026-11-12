@@ -177,6 +177,7 @@ Content rules for every task: no drill content is written by any task (the found
 - [ ] 5. Step engine and pick builder
   - [ ] 5.1 Implement test generators in `test/support/buildTree.ts` and `test/support/arbitraries.ts`
     - `arbTrail(kind)` for main-chapter, Chapter 9 table, annex, Article 90, and index trails that pass `validateCodeTrail`; `treeFromTrails(trails, movedFrom?, decoys)` that derives a consistent Option_Tree, adds 0 to 6 wrong nodes per level, and sets the right `hasParts`; `arbDrill`, `arbStorage`, `arbBuildEnv`, `arbDrillList`, `arbUrl`
+    - Generators import types only from src/model (task 2.1) and StorageLike from src/logic/bestTimes (task 4.6). arbBuildEnv returns plain { PROD, MODE } objects and arbDrillList returns plain DrillRecord arrays; neither imports from src/logic/filterDrills (task 3.1).
     - Test-only files; production code never imports them
     - _Requirements: 17.18, 17.19_
 
