@@ -192,6 +192,12 @@ const panelWorkingSpaceTrail = trailOf("working space", [
   step("table", "Table 110.26(A)(1)"),
 ]);
 
+const burialDepthTrail = trailOf("burial depth", [
+  step("chapter", "Chapter 3"),
+  step("article", "Article 300"),
+  step("table", "Table 300.7(A)"),
+]);
+
 const boxFillTrail = trailOf("box fill", [
   step("chapter", "Chapter 3"),
   step("article", "Article 314"),
@@ -285,6 +291,32 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
           ["Part I", "Part III", "Part IV"],
           ["Table 110.34(A)", "Table 110.28", "Table 110.31"],
         ],
+      }),
+    },
+  }),
+
+  // 2 (moved in 2026)
+  // The 2023 route (Part I > Table 300.5) is held back: the option tree cannot
+  // show one Article with Parts in one edition and none in the other.
+  defineDrill({
+    def: defineCodeTrail({
+      id: "burial-depth-driveway",
+      label: "Burial depth driveway",
+      trails: [burialDepthTrail],
+      hint: "Cover is measured from the top of the cable to finished grade, not the bottom of the trench.",
+      tableValues: [makeTableValue(18, "Table 300.7(A)")],
+    }),
+    question: "What is the minimum cover for a direct-buried cable under a one- and two-family dwelling driveway?",
+    answer: "18 in.",
+    citation: "Table 300.7(A)",
+    founder_checked: false,
+    index_checked: false,
+    wrongOptionsReviewed: false,
+    trees: {
+      toc: buildTocTree("burial-depth-driveway", burialDepthTrail, {
+        keyword: ["cover", "underground installations", "trench depth", "direct burial"],
+        articles: [article(310, true), article(312, false), article(314, true), article(358, false)],
+        rest: [["Table 300.50", "Table 300.19(A)", "Table 310.16"]],
       }),
     },
   }),
