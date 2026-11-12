@@ -1,0 +1,13 @@
+/* Sentinel dark theme tokens. This is the only file that defines color values. */
+@theme {
+  --color-night: #050607;
+  --color-primary: oklch(0.83 0.185 88);
+  --color-surface: oklch(0.2 0.012 270);
+  --color-ink: oklch(0.95 0.005 90);
+  --color-muted: oklch(0.76 0.012 90);
+  --color-danger: oklch(0.74 0.17 25);
+  --color-ok: oklch(0.82 0.17 150);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
