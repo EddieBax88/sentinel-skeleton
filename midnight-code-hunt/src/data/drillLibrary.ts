@@ -354,6 +354,13 @@ const gfciIndexTrail = trailOf("Ground-fault circuit interrupters (GFCI)", [
   step("section", "210.8(A)(7)"),
 ]);
 
+const afciIndexTrail = trailOf("Arc-fault circuit interrupters", [
+  step("index", "Arc-fault circuit interrupters"),
+  step("section", "210.12"),
+  step("section", "210.12(B)"),
+  step("section", "210.12(B)(8)"),
+]);
+
 const receptacleSpacingIndexTrail = trailOf("Receptacles, cord connectors, and attachment plugs (caps)", [
   step("index", "Dwellings, where required"),
   step("section", "210.52"),
@@ -389,7 +396,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       }),
       index: buildIndexTree("panel-working-space", panelWorkingSpaceIndexTrail, {
         keyword: ["Underground wiring", "Ampacities", "Loads"],
-        entries: [{ entry: "Definition", gives: "Art. 100", level: "section" }],
+        entries: [
+          { entry: "Adjacent to live parts (circuits over 1000 volts)", gives: "110.32 through 110.34", level: "section" },
+          { entry: "Assembly occupancies", gives: "518.8", level: "section" },
+          { entry: "Battery systems", gives: "480.10(C)", level: "section" },
+          { entry: "Manholes", gives: "110.72", level: "section" },
+        ],
         rest: [["Table 110.34(A)", "Table 110.28", "Table 110.31"]],
       }),
     },
@@ -656,7 +668,7 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     def: defineCodeTrail({
       id: "afci-bedroom",
       label: "AFCI protection for branch circuits",
-      trails: [afciTrail],
+      trails: [afciTrail, afciIndexTrail],
       hint: "(A) only lists the types of AFCI devices you can use — the rooms that actually need it are in (B), and bedrooms are on that list.",
     }),
     question:
@@ -664,7 +676,7 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     answer: "Yes",
     citation: "210.12(B)(8)",
     founder_checked: true,
-    index_checked: false,
+    index_checked: true,
     wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("afci-bedroom", afciTrail, {
@@ -673,6 +685,18 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
         rest: [
           ["Part II", "Part III"],
           ["210.8", "210.11", "210.5"],
+          ["210.12(A)", "210.12(C)", "210.12(D)"],
+          ["210.12(B)(1)", "210.12(B)(2)", "210.12(B)(3)", "210.12(B)(4)"],
+        ],
+      }),
+      index: buildIndexTree("afci-bedroom", afciIndexTrail, {
+        keyword: ["Ground-fault circuit interrupters (GFCI)", "Ampacities", "Working space"],
+        entries: [
+          { entry: "Protection", gives: "440.65", level: "section" },
+          { entry: "Receptacle replacements", gives: "406.12(D)(4)", level: "section" },
+          { entry: "Solar photovoltaic systems", gives: "690.11", level: "section" },
+        ],
+        rest: [
           ["210.12(A)", "210.12(C)", "210.12(D)"],
           ["210.12(B)(1)", "210.12(B)(2)", "210.12(B)(3)", "210.12(B)(4)"],
         ],
