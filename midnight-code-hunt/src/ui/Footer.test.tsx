@@ -1,9 +1,11 @@
 // Uses fictional fixtures only. Not real NEC content.
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { articleNoPartsDrill } from "../../test/fixtures/fixtureDrills";
-import App from "../App";
-import { FOOTER_DISCLAIMER } from "../copy/strings";
+import { guidedAllWhyNoPartsDrill } from "../../test/fixtures/guidedDrills";
+import App, { AppView } from "../App";
+import { FIXED, FOOTER_DISCLAIMER } from "../copy/strings";
 import { buildNamesIndex } from "../logic/displayName";
 import { filterDrills } from "../logic/filterDrills";
 import { gradeAttempt } from "../logic/grading";
@@ -78,5 +80,41 @@ describe("footer disclaimer", () => {
       </Shell>,
     );
     expect(footerText()).toBe(REQUIRED);
+  });
+});
+
+describe("footer disclaimer on Guided screens", () => {
+  it("is identical on the Guided screen and the Guided end screen (Req 15.5, 19.14, 21.9)", async () => {
+    const user = userEvent.setup();
+    const entries = filterDrills([guidedAllWhyNoPartsDrill], "test");
+    render(<AppView entries={entries} buildMode="test" />);
+    const label = guidedAllWhyNoPartsDrill.def.label;
+    const picker = footerText();
+
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(`^${FIXED.modeGuided}\\b.*${label}`) }),
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(label);
+    const guided = footerText();
+
+    const choose = async (group: string, name: string) => {
+      const g = screen.getAllByRole("group", { name: group }).at(-1)!;
+      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      await user.click(
+        within(g).getByRole("button", { name: new RegExp(`^\\s*${esc}\\s*$`) }),
+      );
+    };
+    await choose("Keyword", "Fictional widget spacing");
+    await choose("Chapter", "Ch 3 Build: wiring methods, raceways, cables, boxes");
+    await choose("Article", "Article 377");
+    await choose("Section", "377.20");
+    await user.click(screen.getByRole("button", { name: FIXED.showFullPathButton }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(FIXED.guidedEndHeading);
+    const end = footerText();
+
+    expect(guided).toBe(REQUIRED);
+    expect(end).toBe(REQUIRED);
+    expect(guided).toBe(picker);
+    expect(end).toBe(guided);
   });
 });

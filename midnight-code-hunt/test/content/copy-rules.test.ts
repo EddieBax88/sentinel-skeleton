@@ -82,6 +82,51 @@ describe("copy rules", () => {
     );
   });
 
+  describe("Guided and Timed mode copy (18.7, 19.16, 22.10, 16.11, 16.12)", () => {
+    const guidedStrings = (): string[] => {
+      const out: string[] = [FIXED.modeGuided];
+      for (const [k, v] of Object.entries(PROSE)) if (/^guided/i.test(k)) out.push(v);
+      for (const [k, v] of Object.entries(FIXED)) {
+        if (/guided/i.test(k) && typeof v === "string") out.push(v);
+      }
+      return out;
+    };
+
+    it("uses the exact mode labels", () => {
+      expect(FIXED.modeGuided).toBe("Guided");
+      expect(FIXED.modeTimed).toBe("Timed");
+    });
+
+    it("never uses a mode word as a Method name", () => {
+      for (const s of allStrings()) {
+        expect(s, s).not.toMatch(/\b(?:Guided|Timed)\s+(?:Index Keyword Lookup|Table of Contents Lookup)\b/);
+        expect(s, s).not.toMatch(/\b(?:Index Keyword Lookup|Table of Contents Lookup)\s+(?:Guided|Timed)\b/);
+        expect(s, s).not.toMatch(/\b(?:Guided|Timed)\s+(?:Method|Lookup)\b/i);
+      }
+      expect(METHOD_LABELS).not.toContain(FIXED.modeGuided);
+      expect(METHOD_LABELS).not.toContain(FIXED.modeTimed);
+      expect(FIXED.methodIndex).not.toMatch(/guided|timed/i);
+      expect(FIXED.methodToc).not.toMatch(/guided|timed/i);
+    });
+
+    it("has no step count or progress counter in any Guided string", () => {
+      const list = guidedStrings();
+      expect(list.length).toBeGreaterThan(5);
+      for (const s of list) {
+        expect(s, s).not.toMatch(STEP_COUNT);
+        expect(s, s).not.toMatch(STEP_COUNT_ALT);
+        expect(s, s).not.toMatch(/\b\d+\s+of\s+\d+\b/i);
+        expect(s, s).not.toMatch(/\bsteps?\s+(?:\d+|one|two|three|four|five|six)\b/i);
+        expect(s, s).not.toMatch(/\d+\s*\/\s*\d+/);
+      }
+    });
+
+    it("leaves the Method labels unchanged", () => {
+      expect(FIXED.methodIndex).toBe("Index Keyword Lookup");
+      expect(FIXED.methodToc).toBe("Table of Contents Lookup");
+    });
+  });
+
   it("lists the index method first and the contents method second", () => {
     expect(PROSE.methodIndexDescription).toMatch(/main method/i);
     expect(PROSE.methodTocDescription).toMatch(/second method/i);

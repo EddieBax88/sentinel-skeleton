@@ -8,6 +8,7 @@ import { validateDrillData } from "../../src/data/validateDrillData";
 import type { DataIssue } from "../../src/data/validateDrillData";
 import { CLEAN_NAMES } from "../fixtures/fictionalNames";
 import { FIXTURE_DRILLS } from "../fixtures/fixtureDrills";
+import { GUIDED_FIXTURE_DRILLS } from "../fixtures/guidedDrills";
 
 const describeIssues = (issues: readonly DataIssue[]): string =>
   issues.map((i) => `${i.drillId} [${i.rule}] ${i.message}`).join("\n");
@@ -24,6 +25,13 @@ describe("drill data", () => {
   it("valid fixture drills have zero issues against fictional names", () => {
     expect(FIXTURE_DRILLS.length).toBeGreaterThan(0);
     const issues = validateDrillData(FIXTURE_DRILLS, CLEAN_NAMES);
+    expect(issues, describeIssues(issues)).toEqual([]);
+  });
+
+  // Validates: Requirements 20.6, 22.1, 22.2, 22.3
+  it("valid Guided fixtures (all, some, and no why) have zero issues", () => {
+    expect(GUIDED_FIXTURE_DRILLS.length).toBeGreaterThan(0);
+    const issues = validateDrillData(GUIDED_FIXTURE_DRILLS, CLEAN_NAMES);
     expect(issues, describeIssues(issues)).toEqual([]);
   });
 });

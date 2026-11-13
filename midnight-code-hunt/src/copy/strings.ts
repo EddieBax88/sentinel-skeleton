@@ -40,6 +40,15 @@ export const PROSE = {
 
   // Row line for a table
   rowLineIntro: "Find the row in the table to read the value.",
+
+  // Guided mode (each sentence 15 words or fewer)
+  guidedDescription: "Pick at your own pace. You hear right away if a pick is right.",
+  timedDescription: "Work the path against the clock. No hints along the way.",
+  guidedCorrectLine: "That pick is correct. Go on to the next step.",
+  guidedIncorrectLine: "That pick is not right.",
+  guidedPickAgain: "That pick is not right. Pick again at this step.",
+  guidedPathComplete: "You found the answer. The path is complete.",
+  guidedEndIntro: "Here is the full path you followed, with the answer and its citation.",
 } as const;
 
 export const FIXED = {
@@ -101,6 +110,13 @@ export const FIXED = {
   tableWalkValue: "Value",
   noPickText: "No pick",
   timerLabel: "Time left",
+
+  // Guided mode. These are modes, never Method names.
+  modeGuided: "Guided",
+  modeTimed: "Timed",
+  showFullPathButton: "Show the full path",
+  runTimedButton: "Run this drill Timed",
+  guidedEndHeading: "Your full path",
 } as const;
 
 /** Result URL for the Sentinel link. */
@@ -119,4 +135,14 @@ export const ANNOUNCE = {
     }
     return `${correct ? "Correct" : "Incorrect"}. ${elapsed} elapsed.`;
   },
+  /** Guided verdict for the newest pick, with the step's reason when one exists. */
+  guided(verdict: "correct" | "incorrect", why?: string): string {
+    if (verdict === "correct") {
+      const base = PROSE.guidedCorrectLine;
+      return why ? `${base} ${why}` : base;
+    }
+    return PROSE.guidedPickAgain;
+  },
+  /** Announced when the last step of the path is picked. */
+  guidedDone: PROSE.guidedPathComplete,
 } as const;

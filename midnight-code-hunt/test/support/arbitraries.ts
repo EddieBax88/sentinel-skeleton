@@ -2,9 +2,9 @@
 // content. Production code never imports this file.
 import fc from "fast-check";
 import type { CodeTrail, CodeTrailDef, TrailStep } from "@sentinel/skeleton-core";
-import type { DrillRecord, TableWalk } from "../../src/model/types";
+import type { DrillRecord, OptionNode, OptionTree, TableWalk } from "../../src/model/types";
 import type { StorageLike } from "../../src/logic/bestTimes";
-import { treeFromTrails, type DecoyPool } from "./buildTree";
+import { addWhys, setWhyOn, treeFromTrails, type DecoyPool, type WhyPicker } from "./buildTree";
 
 export type TrailKind = "main-chapter" | "chapter9-table" | "annex" | "article90" | "index";
 
@@ -189,7 +189,91 @@ const arbTableWalk: fc.Arbitrary<TableWalk> = fc
  * trails exist only then, `founder_checked` implies `wrongOptionsReviewed`,
  * `movedFrom` only on main-chapter Table of Contents drills.
  */
-export const arbDrill: fc.Arbitrary<DrillRecord> = fc
+export const arbDrill: fc.Arbitrary<DrillRecord> = makeArbDrill(false);
+
+/** One valid Why_Sentence: a single sentence of 1 to 300 characters. */
+export const arbWhy: fc.Arbitrary<string> = fc.oneof(
+  { weight: 6, arbitrary: sentence },
+  { weight: 1, arbitrary: fc.constant(".") },
+  { weight: 1, arbitrary: fc.constant(`${"a".repeat(299)}.`) },
+);
+
+/**
+ * Like `arbDrill`, but any subset of the `correct` nodes (Keyword nodes
+ * included) carries a Why_Sentence. The subset may be empty or everything.
+ */
+export const arbDrillWithWhy: fc.Arbitrary<DrillRecord> = makeArbDrill(true);
+
+export type BrokenWhyKind = "empty" | "too-long" | "two-sentences" | "wrong-role" | "moved-role";
+
+/** The rule code the validator should raise for each kind of broken why. */
+export const BROKEN_WHY_RULE: Record<BrokenWhyKind, string> = {
+  empty: "R20.2-length",
+  "too-long": "R20.2-length",
+  "two-sentences": "R20.2-sentence",
+  "wrong-role": "R20.4-role",
+  "moved-role": "R20.4-role",
+};
+
+export type BrokenWhyDrill = { readonly kind: BrokenWhyKind; readonly drill: DrillRecord };
+
+const arbBadWhy = {
+  empty: fc.constantFrom("", " ", "   "),
+  "too-long": fc.integer({ min: 301, max: 340 }).map((n) => `${"a".repeat(n - 1)}.`),
+  "two-sentences": fc
+    .tuple(sentence, sentence)
+    .map(([a, b]) => `${a} ${b}`),
+};
+
+/** Drills with exactly one broken why of the given kind (on the toc tree). */
+export function arbBrokenWhyDrill(kind: BrokenWhyKind): fc.Arbitrary<BrokenWhyDrill> {
+  const base =
+    kind === "moved-role"
+      ? arbDrill.filter((d) => d.def.movedFrom !== undefined)
+      : arbDrill;
+  return fc
+    .tuple(base, fc.nat({ max: 50 }), fc.constantFrom("a", "b"))
+    .chain(([drill, pickAt, _salt]) => {
+      const why =
+        kind === "wrong-role" || kind === "moved-role"
+          ? arbWhy
+          : arbBadWhy[kind];
+      return why.map((w): BrokenWhyDrill => {
+        let toc = drill.trees.toc;
+        if (kind === "wrong-role") {
+          const r = setWhyOn(toc, (n) => n.role === "wrong", w);
+          if (r) toc = r;
+          else {
+            // No wrong node exists (e.g. annex routes): add a wrong sibling at the top.
+            const first = toc[0];
+            const extra = {
+              level: first.level,
+              value: "Fictional wrong decoy 0",
+              role: "wrong",
+              why: w,
+            } as unknown as OptionNode;
+            toc = [...toc, extra] as unknown as OptionTree;
+          }
+        } else if (kind === "moved-role") {
+          toc = setWhyOn(toc, (n) => n.role === "moved", w) ?? toc;
+        } else {
+          let seen = 0;
+          const total = addWhys(toc, () => (seen++, undefined)) && seen;
+          const target = pickAt % Math.max(total, 1);
+          toc = addWhys(toc, (i) => (i === target ? w : undefined));
+        }
+        return { kind, drill: { ...drill, trees: { ...drill.trees, toc } } };
+      });
+    });
+}
+
+/** Every kind of broken-why drill. */
+export const arbBrokenWhy: fc.Arbitrary<BrokenWhyDrill> = fc
+  .constantFrom<BrokenWhyKind>("empty", "too-long", "two-sentences", "wrong-role", "moved-role")
+  .chain((k) => arbBrokenWhyDrill(k));
+
+function makeArbDrill(withWhy: boolean): fc.Arbitrary<DrillRecord> {
+  return fc
   .record({
     idSuffix: fc.nat({ max: 999999 }),
     tocKind: fc.constantFrom<TocKind>(...TOC_KINDS),
@@ -205,6 +289,9 @@ export const arbDrill: fc.Arbitrary<DrillRecord> = fc
     note: sentence,
     tocDecoys: arbDecoyPool,
     indexDecoys: arbDecoyPool,
+    whyMask: withWhy
+      ? fc.array(fc.option(arbWhy, { nil: undefined }), { maxLength: 40 })
+      : fc.constant([] as (string | undefined)[]),
   })
   .chain((r) =>
     fc
@@ -234,14 +321,20 @@ export const arbDrill: fc.Arbitrary<DrillRecord> = fc
           ...(r.articleFork !== undefined ? { articleForkSentence: r.articleFork } : {}),
           ...(r.withTableWalk ? { tableWalk: r.tableWalk } : {}),
           trees: {
-            toc: treeFromTrails(tocTrails, movedFrom, r.tocDecoys),
+            toc: treeFromTrails(tocTrails, movedFrom, r.tocDecoys, whyAt(r.whyMask)),
             ...(r.indexChecked
-              ? { index: treeFromTrails(indexTrails, undefined, r.indexDecoys) }
+              ? { index: treeFromTrails(indexTrails, undefined, r.indexDecoys, whyAt(r.whyMask)) }
               : {}),
           },
         };
       }),
   );
+}
+
+/** Reads a why mask by correct-node index; no mask means no why anywhere. */
+function whyAt(mask: readonly (string | undefined)[]): WhyPicker | undefined {
+  return mask.length === 0 ? undefined : (i) => mask[i % mask.length];
+}
 
 export type StorageKind = "healthy" | "throws-on-read" | "throws-on-write" | "arbitrary";
 export type ArbStorageValue = StorageLike & { readonly kind: StorageKind };

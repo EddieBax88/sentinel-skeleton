@@ -28,7 +28,7 @@ const draftDrill: DrillRecord = { ...articleNoPartsDrill, founder_checked: false
 function renderPicker(
   drills: readonly DrillRecord[],
   mode: BuildMode,
-  options: { onOpen?: (id: string) => void; seed?: (s: ReturnType<typeof createBestTimesStore>) => void } = {},
+  options: { onOpen?: (id: string, mode: "guided" | "timed") => void; seed?: (s: ReturnType<typeof createBestTimesStore>) => void } = {},
 ) {
   const store = createBestTimesStore(memoryStorage());
   options.seed?.(store);
@@ -41,13 +41,16 @@ function renderPicker(
   return { onOpen };
 }
 
+const itemFor = (label: string) =>
+  screen.getAllByRole("listitem").find((li) => li.textContent?.includes(label))!;
+
 describe("DrillPicker", () => {
   it("lists the filtered drills by label in filter order, with the benefit and NEC copy", () => {
     renderPicker([articleWithPartsDrill, draftDrill, movedArticleDrill], "production");
-    const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(2);
-    expect(buttons[0]).toHaveTextContent(articleWithPartsDrill.def.label);
-    expect(buttons[1]).toHaveTextContent(movedArticleDrill.def.label);
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent(articleWithPartsDrill.def.label);
+    expect(items[1]).toHaveTextContent(movedArticleDrill.def.label);
     expect(screen.queryByText(draftDrill.def.label)).not.toBeInTheDocument();
     expect(screen.getByText(PROSE.pickerBenefit)).toBeInTheDocument();
     expect(PROSE.pickerBenefit.length).toBeLessThanOrEqual(120);
@@ -62,10 +65,10 @@ describe("DrillPicker", () => {
         s.submit(id, "toc", 125);
       },
     });
-    const withTimes = screen.getByRole("button", { name: new RegExp(articleWithPartsDrill.def.label) });
+    const withTimes = itemFor(articleWithPartsDrill.def.label);
     expect(within(withTimes).getByText(`${METHOD_LABELS.index}: ${FIXED.bestTimeLabel} 1:15`)).toBeInTheDocument();
     expect(within(withTimes).getByText(`${METHOD_LABELS.toc}: ${FIXED.bestTimeLabel} 2:05`)).toBeInTheDocument();
-    const without = screen.getByRole("button", { name: new RegExp(articleNoPartsDrill.def.label) });
+    const without = itemFor(articleNoPartsDrill.def.label);
     expect(without).not.toHaveTextContent(FIXED.bestTimeLabel);
   });
 
@@ -73,7 +76,7 @@ describe("DrillPicker", () => {
     renderPicker([articleWithPartsDrill], "production", {
       seed: (s) => void s.submit(articleWithPartsDrill.def.id, "toc", 59),
     });
-    const button = screen.getByRole("button");
+    const button = itemFor(articleWithPartsDrill.def.label);
     expect(button).toHaveTextContent(`${METHOD_LABELS.toc}: ${FIXED.bestTimeLabel} 0:59`);
     expect(button).not.toHaveTextContent(METHOD_LABELS.index);
   });
@@ -81,9 +84,9 @@ describe("DrillPicker", () => {
   it("shows the moved label only on drills with movedFrom", () => {
     renderPicker([articleWithPartsDrill, movedArticleDrill], "production");
     expect(screen.getAllByText(FIXED.movedLabel)).toHaveLength(1);
-    const moved = screen.getByRole("button", { name: new RegExp(movedArticleDrill.def.label) });
+    const moved = itemFor(movedArticleDrill.def.label);
     expect(moved).toHaveTextContent(FIXED.movedLabel);
-    const plain = screen.getByRole("button", { name: new RegExp(articleWithPartsDrill.def.label) });
+    const plain = itemFor(articleWithPartsDrill.def.label);
     expect(plain).not.toHaveTextContent(FIXED.movedLabel);
   });
 
@@ -92,9 +95,9 @@ describe("DrillPicker", () => {
     (mode) => {
       renderPicker([articleWithPartsDrill, draftDrill], mode);
       expect(screen.getAllByText(FIXED.draftBadge)).toHaveLength(1);
-      const draft = screen.getByRole("button", { name: new RegExp(draftDrill.def.label) });
+      const draft = itemFor(draftDrill.def.label);
       expect(draft).toHaveTextContent(FIXED.draftBadge);
-      const checked = screen.getByRole("button", { name: new RegExp(articleWithPartsDrill.def.label) });
+      const checked = itemFor(articleWithPartsDrill.def.label);
       expect(checked).not.toHaveTextContent(FIXED.draftBadge);
     },
   );
@@ -121,12 +124,66 @@ describe("DrillPicker", () => {
   it("opens a drill by click, Enter, and Space", async () => {
     const user = userEvent.setup();
     const { onOpen } = renderPicker([articleWithPartsDrill], "production");
-    const button = screen.getByRole("button");
+    const button = within(itemFor(articleWithPartsDrill.def.label)).getByRole("button", {
+      name: new RegExp(`${FIXED.modeTimed}.*${articleWithPartsDrill.def.label}`),
+    });
     await user.click(button);
     button.focus();
     await user.keyboard("{Enter}");
     await user.keyboard(" ");
     expect(onOpen).toHaveBeenCalledTimes(3);
-    expect(onOpen).toHaveBeenCalledWith(articleWithPartsDrill.def.id);
+    expect(onOpen).toHaveBeenCalledWith(articleWithPartsDrill.def.id, "timed");
+  });
+
+  it("renders two buttons per drill, Guided then Timed, with distinct names containing the visible text", () => {
+    renderPicker([articleWithPartsDrill, movedArticleDrill], "production");
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(4);
+    const names = new Set<string>();
+    for (const drill of [articleWithPartsDrill, movedArticleDrill]) {
+      const own = within(itemFor(drill.def.label)).getAllByRole("button");
+      expect(own).toHaveLength(2);
+      expect(own[0]).toHaveTextContent(FIXED.modeGuided);
+      expect(own[1]).toHaveTextContent(FIXED.modeTimed);
+      for (const b of own) {
+        const name = b.getAttribute("aria-labelledby")!
+          .split(" ")
+          .map((id) => document.getElementById(id)!.textContent)
+          .join(" ");
+        expect(name).toContain(b.textContent!);
+        expect(name).toContain(drill.def.label);
+        names.add(name);
+      }
+      expect(own[0]).toHaveAccessibleName(`${FIXED.modeGuided} ${drill.def.label}`);
+      expect(own[1]).toHaveAccessibleName(`${FIXED.modeTimed} ${drill.def.label}`);
+    }
+    expect(names.size).toBe(4);
+  });
+
+  it("calls onOpen with the drill id and the mode of the clicked button", async () => {
+    const user = userEvent.setup();
+    const { onOpen } = renderPicker([articleWithPartsDrill, movedArticleDrill], "production");
+    const [guided, timed] = within(itemFor(movedArticleDrill.def.label)).getAllByRole("button");
+    await user.click(guided);
+    expect(onOpen).toHaveBeenLastCalledWith(movedArticleDrill.def.id, "guided");
+    await user.click(timed);
+    expect(onOpen).toHaveBeenLastCalledWith(movedArticleDrill.def.id, "timed");
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows one Draft badge, one moved label, and one best-time list per drill, not per button", () => {
+    const draftMoved: DrillRecord = {
+      ...movedArticleDrill,
+      def: { ...movedArticleDrill.def, id: "draft-moved-x", label: "Draft moved drill" },
+      founder_checked: false,
+    };
+    renderPicker([draftMoved], "test", {
+      seed: (s) => void s.submit(draftMoved.def.id, "index", 75),
+    });
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(screen.getAllByText(FIXED.draftBadge)).toHaveLength(1);
+    expect(screen.getAllByText(FIXED.movedLabel)).toHaveLength(1);
+    expect(screen.getAllByText(FIXED.bestTimeLabel, { exact: false })).toHaveLength(1);
+    expect(screen.getAllByText(draftMoved.def.label)).toHaveLength(1);
   });
 });

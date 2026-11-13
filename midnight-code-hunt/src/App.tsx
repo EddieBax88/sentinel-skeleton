@@ -5,9 +5,11 @@ import { checkedNames2023 } from "./data/checkedNames2023";
 import { checkedNames2026 } from "./data/checkedNames2026";
 import { DRILL_LIBRARY } from "./data/drillLibrary";
 import { buildNamesIndex } from "./logic/displayName";
-import { filterDrills } from "./logic/filterDrills";
-import { DrillPicker } from "./ui/DrillPicker";
+import { filterDrills, type BuildMode, type DrillEntry } from "./logic/filterDrills";
+import type { MethodId } from "./model/types";
+import { DrillPicker, type DrillMode } from "./ui/DrillPicker";
 import { DrillScreen } from "./ui/DrillScreen";
+import { GuidedScreen } from "./ui/GuidedScreen";
 import { STACK_CLASS, TARGET_CLASS } from "./ui/layout";
 import { NamesContext, useBestTimes } from "./ui/providers";
 import { Shell } from "./ui/Shell";
@@ -50,40 +52,87 @@ function StorageNote() {
   return store.persistent ? null : <p>{PROSE.storageNote}</p>;
 }
 
+interface OpenDrill {
+  drillId: string;
+  mode: DrillMode;
+  initialMethod?: MethodId;
+}
+
+/** Picker-to-screen wiring. Exported so tests can render it with fixture entries. */
+export function AppView({
+  entries,
+  buildMode,
+}: {
+  entries: readonly DrillEntry[];
+  buildMode: BuildMode;
+}) {
+  // null = picker.
+  const [open, setOpen] = useState<OpenDrill | null>(null);
+  const [guidedFinished, setGuidedFinished] = useState(false);
+
+  const openEntry =
+    open === null ? undefined : entries.find((e) => e.drill.def.id === open.drillId);
+  let title: string;
+  if (open === null) title = FIXED.pickerHeading;
+  else if (open.mode === "guided" && guidedFinished) title = FIXED.guidedEndHeading;
+  else title = openEntry?.drill.def.label ?? FIXED.drillHeadingFallback;
+  const back = () => {
+    setGuidedFinished(false);
+    setOpen(null);
+  };
+
+  return (
+    <Shell title={title}>
+      {open === null ? (
+        <>
+          <DrillPicker
+            entries={entries}
+            buildMode={buildMode}
+            onOpen={(drillId, mode) => {
+              setGuidedFinished(false);
+              setOpen({ drillId, mode });
+            }}
+          />
+          <StorageNote />
+        </>
+      ) : (
+        <DrillErrorBoundary key={`${open.drillId}:${open.mode}`} onBack={back}>
+          {open.mode === "guided" ? (
+            <GuidedScreen
+              drillId={open.drillId}
+              entries={entries}
+              buildMode={buildMode}
+              onBack={back}
+              onRunTimed={(method) => {
+                setGuidedFinished(false);
+                setOpen({ drillId: open.drillId, mode: "timed", initialMethod: method });
+              }}
+              onPhaseChange={(phase) => setGuidedFinished(phase === "finished")}
+            />
+          ) : (
+            <DrillScreen
+              drillId={open.drillId}
+              entries={entries}
+              buildMode={buildMode}
+              onBack={back}
+              initialMethod={open.initialMethod}
+            />
+          )}
+        </DrillErrorBoundary>
+      )}
+    </Shell>
+  );
+}
+
 export default function App() {
-  // null = picker; a string = the open drill.
-  const [drillId, setDrillId] = useState<string | null>(null);
   const entries = useMemo(() => filterDrills(DRILL_LIBRARY, BUILD_MODE), []);
   const names = useMemo(
     () => buildNamesIndex({ y2023: checkedNames2023, y2026: checkedNames2026 }),
     [],
   );
-
-  const openEntry =
-    drillId === null ? undefined : entries.find((e) => e.drill.def.id === drillId);
-  const title =
-    drillId === null ? FIXED.pickerHeading : (openEntry?.drill.def.label ?? FIXED.drillHeadingFallback);
-  const back = () => setDrillId(null);
-
   return (
     <NamesContext.Provider value={names}>
-      <Shell title={title}>
-        {drillId === null ? (
-          <>
-            <DrillPicker entries={entries} buildMode={BUILD_MODE} onOpen={setDrillId} />
-            <StorageNote />
-          </>
-        ) : (
-          <DrillErrorBoundary key={drillId} onBack={back}>
-            <DrillScreen
-              drillId={drillId}
-              entries={entries}
-              buildMode={BUILD_MODE}
-              onBack={back}
-            />
-          </DrillErrorBoundary>
-        )}
-      </Shell>
+      <AppView entries={entries} buildMode={BUILD_MODE} />
     </NamesContext.Provider>
   );
 }

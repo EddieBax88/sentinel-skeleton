@@ -39,6 +39,10 @@ const norm = (value: unknown): string =>
 const trimmedLength = (value: unknown): number =>
   typeof value === "string" ? value.trim().length : 0;
 
+// The one-sentence test shared by the fork sentences and the Why_Sentences:
+// true when the trimmed text holds a sentence end followed by more text.
+const isMultiSentence = (value: string): boolean => /[.!?]["')\]]*\s+\S/.test(value.trim());
+
 type Step = { readonly level: string; readonly value: string };
 
 function flatten(trail: CodeTrail): Step[] {
@@ -121,6 +125,50 @@ function validateOne(
   guard(() => checkCore(drill, add));
   guard(() => checkGrading(drill, add));
   guard(() => checkTrees(drill, names, add));
+  guard(() => checkWhy(drill, add));
+}
+
+// R20.2, R20.4: walk both trees; a drill with no `why` anywhere yields nothing.
+function checkWhy(drill: DrillRecord, add: Add): void {
+  const methods: readonly MethodId[] = ["toc", "index"];
+  for (const method of methods) {
+    const field = `trees.${method}.why`;
+    const walk = (group: readonly OptionNode[] | undefined, parents: readonly OptionNode[]): void => {
+      if (!Array.isArray(group) || parents.length > MAX_DEPTH) return;
+      for (const node of group) {
+        const here = [...parents, node];
+        const why = (node as { why?: unknown }).why;
+        if (why !== undefined) {
+          const place = { field, step: here.length - 1, path: pathText(here) };
+          const shown = typeof why === "string" ? why : String(why);
+          const length = trimmedLength(why);
+          if (typeof why !== "string" || length < 1 || length > 300) {
+            add({
+              rule: "R20.2-length",
+              ...place,
+              message: `The why on node "${node.value}" must be a string of 1 to 300 characters after trimming; value: "${shown}".`,
+            });
+          }
+          if (typeof why === "string" && isMultiSentence(why)) {
+            add({
+              rule: "R20.2-sentence",
+              ...place,
+              message: `The why on node "${node.value}" must hold exactly one sentence; value: "${shown}".`,
+            });
+          }
+          if (node.role !== "correct") {
+            add({
+              rule: "R20.4-role",
+              ...place,
+              message: `Only a correct node may carry a why; node "${node.value}" has role ${String(node.role)}.`,
+            });
+          }
+        }
+        walk(node.next, here);
+      }
+    };
+    walk(drill.trees?.[method], []);
+  }
 }
 
 type Add = (issue: Omit<DataIssue, "drillId">) => void;
@@ -141,7 +189,7 @@ function checkText(drill: DrillRecord, add: Add): void {
   const sentence = (field: string, value: string | undefined): void => {
     if (value === undefined) return;
     limit(field, value, 300);
-    if (typeof value === "string" && /[.!?]["')\]]*\s+\S/.test(value.trim())) {
+    if (typeof value === "string" && isMultiSentence(value)) {
       add({ rule: "R2.14", field, message: `${field} must hold exactly one sentence.` });
     }
   };

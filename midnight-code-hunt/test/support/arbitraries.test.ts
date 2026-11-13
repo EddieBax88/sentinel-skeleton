@@ -4,7 +4,16 @@ import fc from "fast-check";
 import { validateCodeTrail } from "@sentinel/skeleton-core";
 import type { CodeTrail } from "@sentinel/skeleton-core";
 import type { OptionNode, OptionTree } from "../../src/model/types";
-import { arbDrill, arbTrail, type TrailKind } from "./arbitraries";
+import { validateDrillData } from "../../src/data/validateDrillData";
+import { CLEAN_NAMES } from "../fixtures/fictionalNames";
+import {
+  arbBrokenWhy,
+  arbDrill,
+  arbDrillWithWhy,
+  arbTrail,
+  BROKEN_WHY_RULE,
+  type TrailKind,
+} from "./arbitraries";
 import { treeFromTrails } from "./buildTree";
 
 const KINDS: readonly TrailKind[] = [
@@ -118,5 +127,50 @@ describe("treeFromTrails", () => {
     };
     expect(validateCodeTrail(moved)).toEqual({ ok: true });
     expectRoutesEqualTrails(treeFromTrails([valid], moved, [["Decoy x 1"]]), [valid]);
+  });
+});
+
+function whysOf(nodes: readonly OptionNode[] | undefined, out: OptionNode[] = []): OptionNode[] {
+  for (const n of nodes ?? []) {
+    if (n.why !== undefined) out.push(n);
+    whysOf(n.next, out);
+  }
+  return out;
+}
+
+describe("Why_Sentence generators", () => {
+  it("leaves default arbDrill output free of any why", () => {
+    fc.assert(
+      fc.property(arbDrill, (d) => {
+        expect(whysOf(d.trees.toc)).toHaveLength(0);
+        expect(whysOf(d.trees.index)).toHaveLength(0);
+      }),
+    );
+  });
+
+  it("puts whys only on correct nodes and still passes validateDrillData", () => {
+    let sawWhy = false;
+    fc.assert(
+      fc.property(arbDrillWithWhy, (d) => {
+        const all = [...whysOf(d.trees.toc), ...whysOf(d.trees.index)];
+        sawWhy ||= all.length > 0;
+        for (const n of all) {
+          expect(n.role).toBe("correct");
+          expect(n.why!.length).toBeGreaterThanOrEqual(1);
+          expect(n.why!.length).toBeLessThanOrEqual(300);
+        }
+        expect(validateDrillData([d], CLEAN_NAMES)).toEqual([]);
+      }),
+    );
+    expect(sawWhy).toBe(true);
+  });
+
+  it("generates broken-why drills that the validator rejects with the matching rule", () => {
+    fc.assert(
+      fc.property(arbBrokenWhy, ({ kind, drill }) => {
+        const rules = validateDrillData([drill], CLEAN_NAMES).map((i) => i.rule);
+        expect(rules).toContain(BROKEN_WHY_RULE[kind]);
+      }),
+    );
   });
 });

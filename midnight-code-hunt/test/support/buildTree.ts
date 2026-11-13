@@ -93,6 +93,7 @@ export function treeFromTrails(
   trails: readonly CodeTrail[],
   movedFrom?: CodeTrail,
   decoys: DecoyPool = [],
+  whys?: WhyPicker,
 ): OptionTree {
   const root: Draft = {
     level: "keyword",
@@ -167,5 +168,44 @@ export function treeFromTrails(
     return [...nodes.slice(shift), ...nodes.slice(0, shift)];
   };
 
-  return convertGroup(root.children, 0) as unknown as OptionTree;
+  const tree = convertGroup(root.children, 0) as unknown as OptionTree;
+  return whys ? addWhys(tree, whys) : tree;
+}
+
+/**
+ * Picks the Why_Sentence for the `index`-th `correct` node (depth-first,
+ * Keyword nodes included). Return `undefined` to leave the node without one.
+ */
+export type WhyPicker = (index: number, node: OptionNode) => string | undefined;
+
+/** Returns a copy of `tree` where `correct` nodes carry the `why` that `pick` gives. */
+export function addWhys(tree: OptionTree, pick: WhyPicker): OptionTree {
+  let i = 0;
+  const walk = (nodes: readonly OptionNode[]): OptionNode[] =>
+    nodes.map((n) => {
+      const why = n.role === "correct" ? pick(i++, n) : undefined;
+      const next = n.next ? { next: walk(n.next) as unknown as [OptionNode, ...OptionNode[]] } : {};
+      const { next: _old, ...rest } = n as OptionNode & { next?: unknown };
+      return { ...rest, ...(why !== undefined ? { why } : {}), ...next } as OptionNode;
+    });
+  return walk(tree) as unknown as OptionTree;
+}
+
+/** Returns a copy of `tree` where the first node matching `match` gets `why` (any role). */
+export function setWhyOn(
+  tree: OptionTree,
+  match: (n: OptionNode) => boolean,
+  why: string,
+): OptionTree | undefined {
+  let done = false;
+  const walk = (nodes: readonly OptionNode[]): OptionNode[] =>
+    nodes.map((n) => {
+      const hit = !done && match(n);
+      if (hit) done = true;
+      const next = n.next ? { next: walk(n.next) as unknown as [OptionNode, ...OptionNode[]] } : {};
+      const { next: _old, ...rest } = n as OptionNode & { next?: unknown };
+      return { ...rest, ...(hit ? { why } : {}), ...next } as OptionNode;
+    });
+  const out = walk(tree) as unknown as OptionTree;
+  return done ? out : undefined;
 }

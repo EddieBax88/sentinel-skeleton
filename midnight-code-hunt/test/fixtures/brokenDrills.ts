@@ -59,6 +59,13 @@ const id = (d: DrillRecord): string => d.def.id;
 
 const wrongSection = (value: string): OptionNode => ({ level: "section", value, role: "wrong" });
 
+/** Adds a why to every moved node, at any depth. */
+const addWhyToMoved = (n: OptionNode): OptionNode => {
+  const next = n.next === undefined ? undefined : (n.next.map(addWhyToMoved) as unknown as Group);
+  const base = (next === undefined ? n : { ...n, next }) as OptionNode;
+  return n.role === "moved" ? ({ ...base, why: "A moved node may not carry a reason." } as OptionNode) : base;
+};
+
 const make = (rule: string, d: DrillRecord, description: string, names: NamesPair = CLEAN_NAMES): BrokenCase => ({
   rule,
   drillId: id(d),
@@ -186,6 +193,53 @@ export const BROKEN_CASES: readonly BrokenCase[] = [
     ),
     "a node resolves to a checked entry with no printed wording",
     FICTIONAL_NAMES,
+  ),
+  make(
+    "R20.2-length",
+    withToc(noParts, editNode(noPartsToc, NP_SECTION, (n) => ({ ...n, why: "   " }) as OptionNode)),
+    "a correct node's why is whitespace only",
+  ),
+  make(
+    "R20.2-length",
+    withToc(
+      noParts,
+      editNode(noPartsToc, NP_SECTION, (n) => ({ ...n, why: `${"This fictional reason runs long ".repeat(10)}done.` }) as OptionNode),
+    ),
+    "a correct node's why is over 300 characters",
+  ),
+  make(
+    "R20.2-sentence",
+    withToc(
+      noParts,
+      editNode(
+        noPartsToc,
+        NP_SECTION,
+        (n) => ({ ...n, why: "This is the first fictional reason. This is a second one." }) as OptionNode,
+      ),
+    ),
+    "a correct node's why holds two sentences",
+  ),
+  make(
+    "R20.4-role",
+    withToc(
+      noParts,
+      editGroup(noPartsToc, NP_ARTICLE, (g) => [
+        ...g,
+        { ...wrongSection("377.98"), why: "A wrong option may not carry a reason." } as OptionNode,
+      ]),
+    ),
+    "a wrong node carries a why",
+  ),
+  make(
+    "R20.4-role",
+    {
+      ...movedArticleDrill,
+      trees: {
+        ...movedArticleDrill.trees,
+        toc: editGroup(movedArticleDrill.trees.toc, [], (g) => g.map(addWhyToMoved)),
+      },
+    },
+    "a moved node carries a why",
   ),
   namesCase(
     "R3.4",

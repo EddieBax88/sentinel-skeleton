@@ -6,7 +6,7 @@ import { FIXED, PROSE } from "../copy/strings";
 import { CHAPTER_LABELS } from "../logic/chapters";
 import { createBestTimesStore } from "../logic/bestTimes";
 import { buildNamesIndex } from "../logic/displayName";
-import type { DrillRecord } from "../model/types";
+import type { DrillRecord, MethodId } from "../model/types";
 import {
   articleNoPartsDrill,
   indexSubdivisionDrill,
@@ -21,7 +21,7 @@ const names = buildNamesIndex({
   y2026: { edition: 2026, entries: [] },
 });
 
-function setup(drill: DrillRecord) {
+function setup(drill: DrillRecord, initialMethod?: MethodId) {
   const clock = createFakeClock(1000);
   const store = createBestTimesStore(undefined);
   const onBack = vi.fn();
@@ -36,6 +36,7 @@ function setup(drill: DrillRecord) {
               entries={[{ drill, draft: false }]}
               buildMode="test"
               onBack={onBack}
+              initialMethod={initialMethod}
             />
           </Shell>
         </NamesContext.Provider>
@@ -150,6 +151,33 @@ describe("DrillScreen grading flow", () => {
     expect(timer()).toBe("1:45");
   });
 
+  it("starts with the chosen initialMethod selected, no picks, and the timer at 2:00", () => {
+    setup(indexSubdivisionDrill, "toc");
+    expect(screen.getByRole("radio", { name: /Table of Contents Lookup/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: /Index Keyword Lookup/ })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(
+      within(screen.getByRole("group", { name: "Keyword" })).queryAllByRole("button", {
+        pressed: true,
+      }),
+    ).toHaveLength(0);
+    expect(timer()).toBe("2:00");
+  });
+
+  it("selects the default Method when no initialMethod is given", () => {
+    setup(indexSubdivisionDrill);
+    expect(screen.getByRole("radio", { name: /Index Keyword Lookup/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(timer()).toBe("2:00");
+  });
+
   it("resets the timer to 2:00 and clears picks on Try again", async () => {
     const { user, advance } = setup(articleNoPartsDrill);
     await walkWrongArticle(user);
@@ -169,6 +197,13 @@ describe("DrillScreen grading flow", () => {
     await user.click(checkButton());
     await user.click(screen.getByRole("button", { name: FIXED.backButton }));
 
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(store.get(articleNoPartsDrill.def.id, "toc")).toBeUndefined();
+  });
+
+  it("offers Back to drills mid-run and saves nothing", async () => {
+    const { user, store, onBack } = setup(articleNoPartsDrill);
+    await user.click(screen.getByRole("button", { name: FIXED.backButton }));
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(store.get(articleNoPartsDrill.def.id, "toc")).toBeUndefined();
   });

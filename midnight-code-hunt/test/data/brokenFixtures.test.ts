@@ -15,6 +15,20 @@ describe("broken fixtures", () => {
     },
   );
 
+  // Validates: Requirements 20.6, 22.1, 22.2, 22.3
+  it.each(
+    BROKEN_CASES.filter((c) => c.rule.startsWith("R20.")).map(
+      (c) => [`${c.rule} (${c.drillId}): ${c.description}`, c] as const,
+    ),
+  )("Why_Sentence fixture reports exactly its rule code and drill id: %s", (_label, c) => {
+    const issues = validateDrillData(c.drills, c.names);
+    expect(issues.length, JSON.stringify(issues, null, 2)).toBeGreaterThan(0);
+    for (const i of issues) {
+      expect(i.rule).toBe(c.rule);
+      expect(i.drillId).toBe(c.drillId);
+    }
+  });
+
   it("covers each rule code at least once", () => {
     expect(new Set(BROKEN_CASES.map((c) => c.rule)).size).toBeGreaterThanOrEqual(20);
   });

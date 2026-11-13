@@ -16,6 +16,8 @@ type NodeBase = {
   /** Key into the Checked_Names_File of the node's edition. */
   readonly nameKey?: string;
   readonly role: OptionRole;
+  /** Founder content: one sentence of 1-300 characters explaining why this pick is right. Only on `correct` Options; never a fork sentence. */
+  readonly why?: string;
   /** The next level's options. Absent means the path ends here. */
   readonly next?: NonEmpty<OptionNode>;
 };

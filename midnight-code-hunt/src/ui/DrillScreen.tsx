@@ -6,6 +6,7 @@ import type { SubmitOutcome } from "../logic/bestTimes";
 import type { BuildMode, DrillEntry } from "../logic/filterDrills";
 import { canCheck, treeFor, viewFlow } from "../logic/stepEngine";
 import { availableMethods } from "../model/methods";
+import type { MethodId } from "../model/types";
 import { STACK_CLASS, TARGET_CLASS } from "./layout";
 import { MethodSelector } from "./MethodSelector";
 import { useBestTimes, useClock, useNames } from "./providers";
@@ -21,6 +22,8 @@ export interface DrillScreenProps {
   buildMode: BuildMode;
   /** Leave the drill and return to the picker. */
   onBack: () => void;
+  /** Start the attempt with this Method when the drill offers it. */
+  initialMethod?: MethodId;
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -40,7 +43,13 @@ function BackButton({ onBack }: { onBack: () => void }) {
  * running; the result screen once checked or expired. The wrapping Shell (and its
  * <h1>) is supplied by App.
  */
-export function DrillScreen({ drillId, entries, buildMode, onBack }: DrillScreenProps) {
+export function DrillScreen({
+  drillId,
+  entries,
+  buildMode,
+  onBack,
+  initialMethod,
+}: DrillScreenProps) {
   const entry = entries.find((e) => e.drill.def.id === drillId);
   if (entry === undefined) {
     return (
@@ -50,17 +59,26 @@ export function DrillScreen({ drillId, entries, buildMode, onBack }: DrillScreen
       </section>
     );
   }
-  return <ActiveDrill entry={entry} buildMode={buildMode} onBack={onBack} />;
+  return (
+    <ActiveDrill
+      entry={entry}
+      buildMode={buildMode}
+      onBack={onBack}
+      initialMethod={initialMethod}
+    />
+  );
 }
 
 function ActiveDrill({
   entry,
   buildMode,
   onBack,
+  initialMethod,
 }: {
   entry: DrillEntry;
   buildMode: BuildMode;
   onBack: () => void;
+  initialMethod?: MethodId;
 }) {
   const { drill, draft } = entry;
   const names = useNames();
@@ -71,7 +89,13 @@ function ActiveDrill({
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
-    (): AttemptState => reducer({ phase: "picker" }, { type: "START", drill, nowMs: clock.nowMs() }),
+    (): AttemptState => {
+      const started = reducer({ phase: "picker" }, { type: "START", drill, nowMs: clock.nowMs() });
+      if (initialMethod !== undefined && availableMethods(drill).includes(initialMethod)) {
+        return reducer(started, { type: "SELECT_METHOD", method: initialMethod });
+      }
+      return started;
+    },
   );
 
   // Submit the best time once per checked attempt; the ref also guards a repeated effect run.
@@ -148,6 +172,7 @@ function ActiveDrill({
       >
         {FIXED.checkButton}
       </button>
+      <BackButton onBack={back} />
     </section>
   );
 }

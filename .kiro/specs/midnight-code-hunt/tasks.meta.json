@@ -119,6 +119,34 @@
     "8.7 Write property test for the Chapter cap exemption": {
       "status": "passed",
       "lastRunTimestamp": 1794509225210
+    },
+    "16.13 Write property test for Why_Sentence validation": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593621264
+    },
+    "16.15 Write property test for the Guided verdict": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593630435
+    },
+    "16.17 Write property test for the Guided Method choice": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593669686
+    },
+    "16.20 Write the Guided isolation test": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593688605
+    },
+    "16.18 Write property test for the end-screen rows": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593694756
+    },
+    "16.19 Write property test that Why_Sentences never change Timed": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593701096
+    },
+    "16.16 Write property tests for the Guided reducer": {
+      "status": "passed",
+      "lastRunTimestamp": 1794593707265
     }
   },
   "executionHistory": {
@@ -1751,6 +1779,537 @@
         "executionId": "e96304e3-5440-4aa1-bdda-0a85528ec602",
         "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
         "timestamp": 1794510099603
+      }
+    ],
+    "16.1 Add the optional `why` field to the Option type": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189825
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593194021
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593248475
+      }
+    ],
+    "16.2 Define every Guided string up front": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189830
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593194818
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593249272
+      }
+    ],
+    "16.3 Let `DrillScreen` start with a chosen Method": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189835
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593195319
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593250383
+      }
+    ],
+    "16.4 Validate Why_Sentences in the data validator": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189846
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593257272
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593533730
+      }
+    ],
+    "16.5 Implement `src/logic/guided.ts`": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189851
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593257321
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593533762
+      }
+    ],
+    "16.6 Let the test generators add Why_Sentences": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189855
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593257643
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593534046
+      }
+    ],
+    "16.7 Create the fictional Guided fixtures": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189858
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593258200
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593534856
+      }
+    ],
+    "16.8 Create the broken Why_Sentence fixtures": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189862
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593541988
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593572079
+      }
+    ],
+    "16.9 Add the two mode buttons to the Drill_Picker": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189866
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593259023
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593535273
+      }
+    ],
+    "16.10 Extend the copy-rules test for Guided": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189871
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593542013
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593572706
+      }
+    ],
+    "16.11 Implement `src/ui/GuidedStepFlow.tsx`": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189879
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593576330
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593638155
+      }
+    ],
+    "16.12 Implement `src/ui/GuidedEndScreen.tsx`": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189883
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593576360
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593638232
+      }
+    ],
+    "16.13 Write property test for Why_Sentence validation": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189886
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593577137
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593639010
+      }
+    ],
+    "16.14 Extend the data tests for Guided fixtures": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189890
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593577933
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593639806
+      }
+    ],
+    "16.15 Write property test for the Guided verdict": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189893
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593578383
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593640386
+      }
+    ],
+    "16.16 Write property tests for the Guided reducer": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189896
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593642556
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593714961
+      }
+    ],
+    "16.17 Write property test for the Guided Method choice": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189900
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593643337
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593715960
+      }
+    ],
+    "16.18 Write property test for the end-screen rows": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189905
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593644123
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593716775
+      }
+    ],
+    "16.19 Write property test that Why_Sentences never change Timed": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189912
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593644923
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593717822
+      }
+    ],
+    "16.20 Write the Guided isolation test": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189917
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593645617
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593718518
+      }
+    ],
+    "16.21 Update the Drill_Picker tests": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189921
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593721702
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593750024
+      }
+    ],
+    "16.22 Implement `src/ui/GuidedScreen.tsx`": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189925
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593752897
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593845642
+      }
+    ],
+    "16.23 Write component tests for the Guided step flow": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189929
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593753953
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593845867
+      }
+    ],
+    "16.24 Write component tests for the Guided end screen": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189933
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593754621
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593846927
+      }
+    ],
+    "16.25 Wire Guided into `App`": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189936
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593884450
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594062559
+      }
+    ],
+    "16.26 Write component tests for the Guided screen": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189940
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593884467
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594063321
+      }
+    ],
+    "16.27 Write the app-level Guided flow test": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189945
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594065875
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594218534
+      }
+    ],
+    "16.28 Extend the accessibility and footer tests": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189949
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594066481
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594218564
+      }
+    ],
+    "17.1 Verify the whole repository": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189952
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594220731
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594364784
+      }
+    ],
+    "18.1 Prove the repository verifies from a clean copy": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794593189956
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594366857
+      },
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594448513
+      }
+    ],
+    "16. Guided mode": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594218571
+      }
+    ],
+    "17. Checkpoint — Guided mode": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594364792
+      }
+    ],
+    "18. Clean-clone proof for Guided mode": [
+      {
+        "executionId": "b49ebd6c-d469-4bcc-9771-b5cdaf6fb2c3",
+        "chatSessionId": "sess_2fba1eae-dd28-407f-85e0-89f20b9ced03",
+        "timestamp": 1794594448521
       }
     ]
   }
