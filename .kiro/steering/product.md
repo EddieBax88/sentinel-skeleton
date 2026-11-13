@@ -18,7 +18,12 @@ The `packages/skeleton-core` package powers both apps. It provides:
 
 ## App 1 — Midnight Code Hunt
 
-Timed drills where the user works through the code-path trail against the clock, using Index Keyword Lookup (selected by default) or Table of Contents Lookup. The audience is exam takers who already know electrical terms, so the app gives no beginner hand-holding. Includes drills covering articles that moved between the 2023 and 2026 NEC.
+Every drill can be run two ways, listed in this order: Guided and Timed. Both ways use Index Keyword Lookup (selected by default) or Table of Contents Lookup.
+
+- **Guided** has no countdown and saves no best time. After each pick the app says right away whether the pick is correct. A correct pick shows that step's one-sentence reason when the founder wrote one and opens the next step. A wrong pick says so and lets the user pick again at that step. Guided ends on a screen with the full path and those reasons, the answer, the citation, the hint, and a button to run the same drill Timed.
+- **Timed** is the drill where the user works through the code-path trail against the clock. The audience is exam takers who already know electrical terms, so Timed gives no beginner hand-holding.
+
+Includes drills covering articles that moved between the 2023 and 2026 NEC.
 
 Theme: Sentinel dark — background `#050607`, primary `oklch(0.83 0.185 88)`.
 

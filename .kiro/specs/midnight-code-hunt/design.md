@@ -11,7 +11,7 @@ The design rests on four ideas:
 3. **A drill has two views of one route set.** The Core `CodeTrailDef` holds the *declared valid trails* (what is correct). The app-level **Option_Tree** holds *what the user can click* (correct options plus wrong options). A data test proves the two views agree, so the tree can never offer a correct route that the Core would not grade as `matched`, and every declared trail is reachable.
 4. **No drill content is written here.** This document and its fixtures contain no real question, answer, trail, Index entry, or NEC citation. Every NEC number that appears below is an illustrative example only and is unverified until the founder confirms it against the founder's NFPA 2026 source. Fixtures are fictional and live in a test-only folder.
 
-**Guided mode (added later).** Every drill also runs in a second mode, Guided, listed before Timed. Guided has no countdown and saves no best time. After each pick the app gives a verdict at once; a correct pick shows the founder's one-sentence `why` (when the Option has one) and opens the next step; a wrong pick is refused and the same step stays open. Guided ends on its own screen with the full path, the answer, the citation, the hint, the Sentinel link, and a button that runs the same drill Timed. The design keeps Timed untouched by adding new modules beside it (`logic/guided.ts`, `ui/GuidedScreen.tsx`, `ui/GuidedStepFlow.tsx`, `ui/GuidedEndScreen.tsx`) and reusing the existing step engine, pick builder, grading selection, display-name resolver, and Method_Selector without changing them. The only edits to files Timed uses are additive: an optional `why` type field, two picker buttons, and an optional starting Method on `DrillScreen`. See "Guided mode" under Components.
+**Guided mode (added later).** Every drill also runs in a second mode, Guided, listed before Timed. Guided has no countdown and saves no best time. After each pick the app gives a verdict at once; a correct pick shows the founder's one-sentence `why` (when the Option has one) and opens the next step; a wrong pick is refused and the same step stays open. Guided ends on its own screen with the full path (each step's row carries its `why` when it has one, so the finished path is the worked example), the answer, the citation, the hint, the Sentinel link, and a button that runs the same drill Timed. The design keeps Timed untouched by adding new modules beside it (`logic/guided.ts`, `ui/GuidedScreen.tsx`, `ui/GuidedStepFlow.tsx`, `ui/GuidedEndScreen.tsx`) and reusing the existing step engine, pick builder, grading selection, display-name resolver, and Method_Selector without changing them. The only edits to files Timed uses are additive: an optional `why` type field, two picker buttons, and an optional starting Method on `DrillScreen`. See "Guided mode" under Components.
 
 Constraints from the steering files that shape the design: no runtime AI, no backend, no network calls, static deploy on Vercel, Vitest plus fast-check for tests, and a Sentinel dark theme (background `#050607`, primary `oklch(0.83 0.185 88)`).
 
@@ -852,17 +852,21 @@ export type GuidedView = {
 export function viewGuided(state: Extract<GuidedState, { phase: "guiding" }>, names: CheckedNamesIndex): GuidedView;
 
 export type PathRow =
-  | { readonly kind: "keyword"; readonly pickText: string }
-  | { readonly kind: "step"; readonly label: StepLabel; readonly level: string; readonly pickText: string }
+  | { readonly kind: "keyword"; readonly pickText: string; readonly why?: string }
+  | { readonly kind: "step"; readonly label: StepLabel; readonly level: string; readonly pickText: string; readonly why?: string }
   | { readonly kind: "row-line"; readonly tableWalk: TableWalk };
 
-/** Req 21.3: Keyword row, one row per accepted pick in click order, then the Row line when the drill has a tableWalk. pickText from resolveDisplay. */
+/**
+ * Req 21.3: Keyword row, one row per accepted pick in click order, then the Row line when the drill has a tableWalk.
+ * pickText from resolveDisplay. `why` is the resolved node's `why`, set only when the node has one (the property is
+ * absent, not an empty string, otherwise). The row-line carries none. No fork sentence is ever read here.
+ */
 export function guidedPathRows(
   drill: DrillRecord, method: MethodId, picks: readonly string[], names: CheckedNamesIndex,
 ): readonly PathRow[];
 ```
 
-`viewGuided` reuses `viewFlow` and `resolvePath` unchanged. A picked node's `why` is read from the resolved path, so a Why_Sentence is shown only for an accepted pick and never for a wrong one.
+`viewGuided` reuses `viewFlow` and `resolvePath` unchanged. A picked node's `why` is read from the resolved path, so a Why_Sentence is shown only for an accepted pick and never for a wrong one. `guidedPathRows` resolves the same path and copies each node's `why` onto its row, so the end screen shows exactly the sentences the user saw step by step, and the two Index clicks keep one sentence each.
 
 Why `gradeTrail` and not the node `role`: `role` would be a second source of truth about correctness. Calling the Core keeps Requirement 10 criterion 1 true ("the Core grades"), and Property 31 proves it agrees with an independent prefix check. The data test already guarantees the tree and the declared trails agree, so on valid data the two give the same answer.
 
@@ -872,7 +876,7 @@ Why `gradeTrail` and not the node `role`: `role` would be a second source of tru
 |---|---|---|
 | `GuidedScreen` | `drillId`, `entries`, `buildMode`, `onBack`, `onRunTimed(method)` | Finds the entry as `DrillScreen` does. Owns `useReducer(createGuidedReducer())`. In `guiding`: Draft badge rule, the `question`, `MethodSelector` (unchanged component), `GuidedStepFlow`, and, when `pathEnded`, the "Show the full path" button. In `finished`: `GuidedEndScreen`. No `TimerDisplay`, no Check button, no best-times context use. Posts verdict announcements to the live region. |
 | `GuidedStepFlow` | `GuidedView`, `onPick(depth, value)` | One `<section>` and `<h2>` per labeled step, same headings as `StepFlow`. An answered click shows only the accepted pick with a check mark, the text "correct", and its Why_Sentence when present (plain text). The open click shows its Options as buttons, all enabled; the tried wrong Option carries a text marker. The newest verdict is a text line with a marker (`role="status"` not used; the shared live region announces it). The Index step is one heading with two ordered groups, as in `StepFlow`. Rows are never re-offered once accepted. |
-| `GuidedEndScreen` | `drill`, `method`, `picks`, `onRunTimed`, `onBack` | Shell `<h1>` focused on mount (same effect `ResultScreen` uses). Path rows from `guidedPathRows`, the answer and citation, the hint, the `https://sentinellearning.com` link above the buttons, then "Run this drill Timed" and "Back to drills". Posts the path-complete announcement. No timer, elapsed time, overall result, fork sentence, or moved-article message. |
+| `GuidedEndScreen` | `drill`, `method`, `picks`, `onRunTimed`, `onBack` | Shell `<h1>` focused on mount (same effect `ResultScreen` uses). Path rows from `guidedPathRows`: each row shows the step label and the pick text, and, only when the row has a `why`, that sentence as plain text under the pick (no placeholder element otherwise), then the answer and citation, the hint, the `https://sentinellearning.com` link above the buttons, then "Run this drill Timed" and "Back to drills". Posts the path-complete announcement. No timer, elapsed time, overall result, fork sentence, or moved-article message. |
 | `DrillPicker` (changed) | `onOpen(drillId, mode)` | Each drill row keeps one label, one Draft badge, one moved label, and one best-time list, and gains two buttons: "Guided" first, "Timed" second. Accessible name of each button includes the drill label (for example through `aria-labelledby` with the label's id and the button's own id). |
 | `DrillScreen` (changed, additive) | optional `initialMethod?: MethodId` | When set and offered, the initial state is `START` followed by `SELECT_METHOD(initialMethod)` in the lazy initializer. When absent, nothing changes. The Timer starts at the `START` reading, so the user sees 2:00. |
 
@@ -1303,7 +1307,7 @@ Reflection on the prework: it produced these candidates, and the following were 
 
 ### Property 36: Guided end rows equal the accepted path
 
-*For any* finished state: `guidedPathRows` returns a Keyword row first, then exactly one step row per remaining accepted pick in click order with levels equal to the resolved nodes' levels (the two Index clicks are two rows), then a Row line if and only if the drill has a `tableWalk`; each `pickText` equals `resolveDisplay` of its node.
+*For any* finished state: `guidedPathRows` returns a Keyword row first, then exactly one step row per remaining accepted pick in click order with levels equal to the resolved nodes' levels (the two Index clicks are two rows), then a Row line if and only if the drill has a `tableWalk`; each `pickText` equals `resolveDisplay` of its node; each row's `why` equals its node's `why` when the node has one and is absent otherwise; the Row line has none; and no row carries a fork sentence or a moved-article message, whatever the drill's `chapterForkSentence` and `articleForkSentence`.
 
 **Validates: Requirements 21.3**
 
@@ -1412,7 +1416,7 @@ All use fixture drills and a fake clock supplied through `ClockContext`.
 - `ResultScreen`: elapsed time, Keyword row, per-step verdicts with text labels, answer and citation, hint, the `https://sentinellearning.com` link, fork sentences on their rows only when present, Table_Walk on the Row line, and the moved-article message with the `editionNote` (Requirement 17.15).
 - `DrillPicker`: lists filtered drills, best times per method, the moved label, the "Draft" text badge in test mode and none in production, the empty-library message (Requirement 17.16).
 - `GuidedStepFlow` and `GuidedScreen` (fixtures `test/fixtures/guidedDrills.ts`): for both Methods, a correct pick shows verdict, Why_Sentence when present (and only the verdict when absent), and the next step; a wrong pick shows "incorrect", no Why_Sentence, no correct answer, keeps the step open and allows a second pick; the Keyword step's Why_Sentence; the Index step with a Why_Sentence on each of its two clicks; with Parts, without Parts, and the Chapter 9 table; accepted picks cannot be changed; Method choice clears picks, arrow keys wrap; the last correct pick shows verdict, Why_Sentence, and "Show the full path"; no Timer and no Check button (Requirements 22.4).
-- `GuidedEndScreen`: path rows, Row line only with a Table_Walk, answer, citation, hint, the Sentinel link above the buttons, "Run this drill Timed" opens the Drill_Screen for the same drill and Method at 2:00, "Back to drills", and no elapsed time, overall result, fork sentence, or moved-article message (22.5).
+- `GuidedEndScreen`: path rows, each row's Why_Sentence under its pick when the Option has one (Keyword row and both Index rows included) and nothing extra when it has none, no Why_Sentence on the Row line, Row line only with a Table_Walk, answer, citation, hint, the Sentinel link above the buttons, "Run this drill Timed" opens the Drill_Screen for the same drill and Method at 2:00, "Back to drills", and no elapsed time, overall result, fork sentence (also when the fixture sets both fork fields), or moved-article message (22.5).
 - App level: picker to Guided to end screen to Timed, with a counting `localStorage` proving Guided writes nothing and Timed still saves a best time only for a correct, checked attempt (22.6).
 - `DrillPicker`: two buttons per drill, Guided then Timed, distinct accessible names, one Draft badge and one best-time list per drill (22.7).
 - Existing Timed component tests keep every Timed assertion; only the queries that open a drill from the picker change (22.11).
@@ -1474,5 +1478,6 @@ Items where a requirement was hard to meet as written, was unclear, or meets the
 | 21 | Guided / data | Two trails that share a node share its `why`; a different reason for the same node on two trails is not expressible. | Accepted for now; no drill needs it. If one does, a trail-keyed override can be added later without changing the Core. |
 | 22 | Guided / `movedFrom` | A 2023-route pick in Guided is plain "incorrect". | Chosen to keep scope small. A moved-article message is an additive later change. |
 | 23 | Guided / tests | The picker entry changes from one button to two, so the existing tests that click the drill button need a new query. | Only the query changes; no Timed assertion changes (Req 22.11). |
-| 24 | Guided / steering | `product.md` still says App 1 is timed drills with no beginner hand-holding. | Not edited here. The founder updates the steering text. |
+| 24 | Guided / steering | `product.md` said App 1 is timed drills with no beginner hand-holding. | Updated at the founder's request: App 1 offers Guided and Timed for every drill, and the hand-holding and countdown wording applies to Timed only. Nothing else in steering changed. |
 | 25 | Guided / copy | The reason for Guided (new learners do better guided first) is the founder's rationale. | It lives in this spec only. UI copy makes no learning-outcome claim, no numeric figure, and no pass promise. |
+| 26 | Guided end screen | The end screen repeats the Why_Sentences shown step by step. | Founder decision: the finished path with its reasons is the worked example the user studies. Rows read `why` from the same resolved path, so the two places cannot disagree. Fork sentences and the moved-article message stay off this screen. |
