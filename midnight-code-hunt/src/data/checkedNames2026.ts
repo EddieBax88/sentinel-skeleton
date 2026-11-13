@@ -14,7 +14,6 @@ export const checkedNames2026: CheckedNamesFile = {
     { key: "article-110", shortDescription: "general requirements for electrical installations", checked: false },
     { key: "article-210", shortDescription: "branch circuits", checked: false },
     { key: "article-215", shortDescription: "feeders", checked: false },
-    { key: "article-220", shortDescription: "branch-circuit, feeder, and service load calculations", checked: false },
     { key: "article-225", shortDescription: "outside branch circuits and feeders", checked: false },
     { key: "article-230", shortDescription: "services", checked: false },
     { key: "article-240", shortDescription: "overcurrent protection", checked: false },
