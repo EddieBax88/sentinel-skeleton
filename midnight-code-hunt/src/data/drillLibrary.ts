@@ -354,6 +354,13 @@ const gfciIndexTrail = trailOf("Ground-fault circuit interrupters (GFCI)", [
   step("section", "210.8(A)(7)"),
 ]);
 
+const receptacleSpacingIndexTrail = trailOf("Receptacles, cord connectors, and attachment plugs (caps)", [
+  step("index", "Dwellings, where required"),
+  step("section", "210.52"),
+  step("section", "210.52(A)"),
+  step("section", "210.52(A)(1)"),
+]);
+
 export const DRILL_LIBRARY: readonly DrillRecord[] = [
   // 1
   defineDrill({
@@ -368,9 +375,9 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       "A 120/240-volt panelboard has exposed live parts on one side and no live or grounded parts on the other side. What is the minimum depth of working space in front of it?",
     answer: "3 ft",
     citation: "Table 110.26(A)(1)",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("panel-working-space", panelWorkingSpaceTrail, {
         keyword: ["clearance", "dedicated space", "illumination", "headroom"],
@@ -402,12 +409,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     question: "What is the minimum cover for a direct-buried cable under a one- and two-family dwelling driveway?",
     answer: "18 in.",
     citation: "Table 300.7(A)",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("burial-depth-driveway", burialDepthTrail, {
-        keyword: ["cover", "underground installations", "trench depth", "direct burial"],
+        keyword: ["underground installations", "trench depth", "working space"],
         articles: [article(310, true), article(312, true), article(314, true), article(358, true)],
         rest: [["Table 300.19(B)", "Table 310.16"]],
       }),
@@ -437,12 +444,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       "How many 12 AWG conductors are allowed in a 4-inch square metal box, 2-1/8 inches deep, with nothing else in the box?",
     answer: "13",
     citation: "Table 314.16(A)",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("box-fill-4-square", boxFillTrail, {
-        keyword: ["conductor fill", "volume allowance", "cabinets"],
+        keyword: ["cabinets", "conduit fill", "ampacity"],
         articles: [article(300, false), article(310, true), article(312, true), article(358, true)],
         rest: [
           ["Part I", "Part III", "Part IV"],
@@ -473,12 +480,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     question: "How many 12 AWG THHN copper conductors fit in a 3/4-in. EMT?",
     answer: "16",
     citation: "Chapter 9, Tables 4 and 5",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: false,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("conduit-fill-emt", conduitFillTrail, {
-        keyword: ["raceway fill", "conductor fill", "conduit size", "box fill"],
+        keyword: ["conduit size", "box fill", "ampacity"],
         articles: [],
         rest: [["Table 1", "Table 5A", "Table 8", "Table 9"]],
       }),
@@ -497,12 +504,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     question: "What size copper THHN conductor is needed for a 100-amp feeder with 75°C terminations?",
     answer: "3 AWG copper",
     citation: "Table 310.16",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("ampacity-100a-feeder", ampacityTrail, {
-        keyword: ["conductors", "temperature limitations", "derating", "terminations"],
+        keyword: ["temperature limitations", "derating", "terminations"],
         articles: [article(300, false), article(314, true), article(312, true), article(358, true)],
         rest: [
           ["Part I", "Part II"],
@@ -535,12 +542,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       "What size copper grounding electrode conductor is required for a service with 3/0 AWG copper service-entrance conductors?",
     answer: "4 AWG copper",
     citation: "Table 250.66",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("gec-service", gecTrail, {
-        keyword: ["grounded conductor", "main bonding jumper", "grounding electrode", "bonding"],
+        keyword: ["grounded conductor", "main bonding jumper", "bonding"],
         articles: [article(210, true), article(215, false), article(230, true), article(240, true)],
         rest: [
           ["Part I", "Part II", "Part IV", "Part V"],
@@ -572,9 +579,9 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     question: "What size copper equipment grounding conductor is required for a 60-amp circuit?",
     answer: "10 AWG copper",
     citation: "Table 250.122",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("egc-60a", egcTrail, {
         keyword: ["grounding electrode conductor", "grounded conductor", "bonding jumper", "grounding"],
@@ -612,15 +619,15 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       "Is GFCI protection required for a 125-volt, 15-amp receptacle serving a dwelling kitchen countertop?",
     answer: "Yes",
     citation: "210.8(A)(7)",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: true,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree(
         "gfci-kitchen-countertop",
         gfciTrail,
         {
-          keyword: ["AFCI", "ground-fault protection", "receptacles", "personnel protection"],
+          keyword: ["AFCI", "ground-fault protection", "personnel protection"],
           articles: [article(215, false), article(230, true), article(225, true), article(240, true)],
           rest: [
             ["Part II", "Part III"],
@@ -656,12 +663,12 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
       "Is AFCI protection required for a 120-volt branch circuit supplying a receptacle outlet in a dwelling bedroom?",
     answer: "Yes",
     citation: "210.12(B)(8)",
-    founder_checked: false,
+    founder_checked: true,
     index_checked: false,
-    wrongOptionsReviewed: false,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("afci-bedroom", afciTrail, {
-        keyword: ["GFCI", "branch circuits", "bedrooms"],
+        keyword: ["GFCI", "bedrooms", "receptacle spacing"],
         articles: [article(215, false), article(230, true), article(225, true), article(240, true)],
         rest: [
           ["Part II", "Part III"],
@@ -678,22 +685,34 @@ export const DRILL_LIBRARY: readonly DrillRecord[] = [
     def: defineCodeTrail({
       id: "receptacle-spacing-living-room",
       label: "Required receptacle spacing in a dwelling",
-      trails: [receptacleSpacingTrail],
+      trails: [receptacleSpacingTrail, receptacleSpacingIndexTrail],
       hint: "The book only states 6 feet — no point on the wall can be more than 6 feet from a receptacle — and 12 feet between two receptacles is just that rule doubled.",
     }),
     question: "What is the maximum spacing between receptacles along a dwelling living-room wall?",
     answer: "12 ft apart, 6 ft max from any point.",
     citation: "210.52(A)(1)",
-    founder_checked: false,
-    index_checked: false,
-    wrongOptionsReviewed: false,
+    founder_checked: true,
+    index_checked: true,
+    wrongOptionsReviewed: true,
     trees: {
       toc: buildTocTree("receptacle-spacing-living-room", receptacleSpacingTrail, {
-        keyword: ["receptacle outlets", "outlets required", "wall space", "convenience outlets"],
+        keyword: ["convenience outlets", "GFCI", "working space"],
         articles: [article(215, false), article(230, true), article(225, true), article(240, true)],
         rest: [
           ["Part I", "Part II"],
           ["210.50", "210.62", "210.63", "210.70"],
+          ["210.52(B)", "210.52(C)", "210.52(D)"],
+          ["210.52(A)(2)", "210.52(A)(3)", "210.52(A)(4)"],
+        ],
+      }),
+      index: buildIndexTree("receptacle-spacing-living-room", receptacleSpacingIndexTrail, {
+        keyword: ["Boxes (outlet, device, pull, and junction)", "Working space", "Ampacities"],
+        entries: [
+          { entry: "Guest rooms, guest suites, and dormitories", gives: "210.60", level: "section" },
+          { entry: "Meeting rooms", gives: "210.65", level: "section" },
+          { entry: "Loads", gives: "120.14", level: "section" },
+        ],
+        rest: [
           ["210.52(B)", "210.52(C)", "210.52(D)"],
           ["210.52(A)(2)", "210.52(A)(3)", "210.52(A)(4)"],
         ],
