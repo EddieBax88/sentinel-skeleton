@@ -6,6 +6,8 @@ Build `midnight-code-hunt/` (App 1) as a standalone Vite + React + Tailwind + Ty
 
 All decisions live in pure functions under `src/logic/`; components only render and dispatch. Tests are Vitest, jsdom, Testing Library, and fast-check (devDependencies only, at least 100 runs per property).
 
+Tasks 1 to 15 built the Timed app and are done. Tasks 16 to 18 add Guided mode as a new group at the end (requirements 18 to 22, design "Guided mode"). They add new modules beside the Timed code and change Timed files only in the three additive ways the design names: an optional `why` type field, two picker buttons, and an optional starting Method on `DrillScreen`. The waves for tasks 16 to 18 start after wave 12.
+
 Test files: each property gets its own test file named `<module>.<topic>.property.test.ts` next to its module (a refinement of the design's file table, so property sub-tasks never write to the same file and can run in parallel). Each test carries the tag `// Feature: midnight-code-hunt, Property N: <title>`.
 
 Content rules for every task: no drill content is written by any task (the founder supplies every question, answer, trail, hint, and Index entry), fictional fixtures live only in `test/fixtures/`, every NEC number in an example is illustrative and unverified, and no task edits anything under `packages/skeleton-core/` or requires the Core's `dist/` to exist.
@@ -456,6 +458,154 @@ Content rules for every task: no drill content is written by any task (the found
     - Show the command results in the task output, then delete the temp folder
     - _Requirements: 1.5, 1.12_
 
+- [ ] 16. Guided mode
+  - [ ] 16.1 Add the optional `why` field to the Option type
+    - Edit only `src/model/types.ts`: add `readonly why?: string` to `NodeBase` with the comment from the design (founder content, one sentence of 1 to 300 characters, only on `correct` Options, not a fork sentence)
+    - Change nothing else; every existing builder and test keeps compiling because the field is optional
+    - _Requirements: 20.1, 20.2, 20.4_
+
+  - [ ] 16.2 Define every Guided string up front
+    - Edit only `src/copy/strings.ts`. FIXED: the labels "Guided", "Timed", "Show the full path", "Run this drill Timed", and the Guided_End_Screen heading. PROSE (each sentence at most 15 words, grade 7.0 or lower): the one-sentence mode descriptions for the picker, the "correct" and "incorrect" verdict lines, the "incorrect, pick again" sentence, the path-complete text, and the end-screen intro. Add `ANNOUNCE.guided(verdict, why?)` and `ANNOUNCE.guidedDone`
+    - Reuse the existing verdict labels ("correct", "incorrect"), `backButton`, `sentinelLinkText`, `answerLabel`, `citationLabel`, `hintLabel`, and the step headings; do not copy them
+    - No string holds a step count or a progress counter, a pass or score promise, a gendered term, or a numeric time-savings figure; "Guided" and "Timed" are never used as Method names; write no Why_Sentence (those are founder content)
+    - _Requirements: 18.1, 18.7, 19.4, 19.7, 19.9, 19.16, 21.2, 21.6, 21.7_
+
+  - [ ] 16.3 Let `DrillScreen` start with a chosen Method
+    - Edit only `src/ui/DrillScreen.tsx` and add two tests to `src/ui/DrillScreen.test.tsx`: an optional `initialMethod?: MethodId` prop; when set and offered by the drill, the lazy initializer dispatches `START` then `SELECT_METHOD(initialMethod)`; when absent the code path is exactly as today
+    - Tests: with `initialMethod` set the selected Method is that Method, picks are empty, and the timer shows 2:00; without it the default Method is selected (the existing assertions stay as they are)
+    - _Requirements: 18.5, 21.6, 7.1, 6.2_
+
+  - [ ] 16.4 Validate Why_Sentences in the data validator
+    - Edit only `src/data/validateDrillData.ts`: walk both trees for every node; rule codes `R20.2-length` (string, 1 to 300 after trim), `R20.2-sentence` (the same one-sentence test the fork sentences use; extract it to one shared helper inside the file), and `R20.4-role` (`why` only on `correct` nodes); each issue names the drill `id`, the field, and the node value
+    - A drill with no `why` anywhere yields no issue from these rules
+    - _Requirements: 20.2, 20.4, 20.6, 22.1_
+
+  - [ ] 16.5 Implement `src/logic/guided.ts`
+    - Export `PickJudgement`, `judgePick`, `GuidedFeedback`, `GuidedState`, `GuidedEvent`, `createGuidedReducer(deps?)`, `GuidedView`, `viewGuided`, `PathRow`, and `guidedPathRows`, exactly as the design gives them
+    - `judgePick` uses `treeFor`, `optionsAt`, `resolvePath`, `selectGradingInput`, `buildGradePicks`, and one `deps.gradeTrail` call per pick at depth 1 or more, with `movedFrom` dropped; depth 0 uses `keywordCorrect`; correct means the first N results are all correct
+    - The reducer follows the rules in the design: depth must equal `picks.length`, a wrong pick is never stored, `SELECT_METHOD` clears picks and feedback, `FINISH` only when the path has ended, `LEAVE` goes to `idle`
+    - Import neither `timer.ts` nor `bestTimes.ts`, no React, no DOM; no network-call words in comments
+    - _Requirements: 19.1, 19.3, 19.5, 19.6, 19.7, 19.8, 19.9, 19.10, 19.13, 19.17, 21.3, 10.1_
+
+  - [ ] 16.6 Let the test generators add Why_Sentences
+    - Edit `test/support/buildTree.ts`, `test/support/arbitraries.ts`, and `test/support/arbitraries.test.ts`: an option to give any subset of `correct` nodes (Keyword nodes included) a one-sentence `why` of 1 to 300 characters; default output stays as it is today so existing property tests are unaffected; add the broken-why generators (empty, over 300, two sentences, `why` on a `wrong` or `moved` node)
+    - Extend the generator unit test: generated drills with `why` still pass `validateDrillData`; generated broken-why drills do not
+    - _Requirements: 20.1, 20.2, 20.4, 22.9_
+
+  - [ ] 16.7 Create the fictional Guided fixtures
+    - New file `test/fixtures/guidedDrills.ts` (marked fictional, never imported by non-test files in `src/`): derive from the existing fixture drills (an Article with Parts, an Article with no Parts, a Chapter 9 table with a `tableWalk`, an Index route with a subdivision) with these variants: a `why` on every correct Option; a `why` on only some Options, one case with a Keyword `why` and one without; none at all; an Index drill with a `why` on each of the two Index clicks
+    - Every sentence says it is made up; all NEC-looking numbers are fictional and unverified
+    - _Requirements: 20.5, 20.6, 22.2_
+
+  - [ ] 16.8 Create the broken Why_Sentence fixtures
+    - Edit only `test/fixtures/brokenDrills.ts`: one broken case per rule code `R20.2-length` (empty or whitespace-only, and over 300 characters), `R20.2-sentence` (two sentences), and `R20.4-role` (a `why` on a `wrong` Option and a `why` on a `moved` Option), each recording its expected rule code and drill `id`, built by minimally mutating an existing fixture
+    - _Requirements: 22.3_
+
+  - [ ] 16.9 Add the two mode buttons to the Drill_Picker
+    - Edit only `src/ui/DrillPicker.tsx`: `onOpen(drillId, mode)` with `mode` `"guided" | "timed"`; per drill, one label, one Draft badge, one moved label, and one best-time list, then two native buttons, "Guided" first and "Timed" second; each button's accessible name contains its visible text and names the drill (for example `aria-labelledby` with the drill label's id and the button's own id); 44 px targets and 8 px gaps through the shared layout classes
+    - No change to filtering, best-time display, empty messages, or notes
+    - _Requirements: 18.1, 18.2, 18.6, 5.1, 5.3, 5.8, 5.9, 13.2, 14.9_
+
+  - [ ] 16.10 Extend the copy-rules test for Guided
+    - Edit only `test/content/copy-rules.test.ts`: the labels "Guided" and "Timed" are exact; neither word appears next to a Method label as its name; no Guided string matches a step count or a progress counter such as "2 of 5" or "step 2"; the Method labels are unchanged. The reading-level and content-scan tests already cover every `PROSE` string and every file under `src/`, so no edit is needed there
+    - _Requirements: 18.7, 19.16, 22.10, 16.11, 16.12_
+
+  - [ ] 16.11 Implement `src/ui/GuidedStepFlow.tsx`
+    - One `<section>` and `<h2>` per labeled step with the same headings as `StepFlow`; an answered click shows only the accepted pick with a check mark, the text "correct", and its Why_Sentence as plain text when present; the open click shows its Options as enabled buttons with the tried wrong Option marked in text; the newest verdict is a text line with a non-color marker; the Index step is one heading with two ordered groups; the Row line is plain text; no `NO_PARTS` control; focus moves to the new step heading or to the second Index group in the same commit, and stays on the Option after an incorrect pick
+    - _Requirements: 19.3, 19.4, 19.6, 19.7, 19.8, 19.15, 20.10, 14.5, 13.2_
+
+  - [ ] 16.12 Implement `src/ui/GuidedEndScreen.tsx`
+    - Heading focused on mount, path rows from `guidedPathRows`, the Row line only with a Table_Walk, the answer and citation, the hint, the `https://sentinellearning.com` link above the buttons, "Run this drill Timed" before "Back to drills", the path-complete announcement; no timer, elapsed time, overall result, fork sentence, or moved-article message; no best-times context use
+    - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5, 21.6, 21.7, 21.8, 21.9, 14.6, 15.4_
+
+  - [ ] 16.13 Write property test for Why_Sentence validation
+    - File `test/data/drillData.why.property.test.ts`
+    - **Property 37: Why sentences are optional and validated**
+    - **Validates: Requirements 20.2, 20.4, 20.6, 22.1**
+
+  - [ ] 16.14 Extend the data tests for Guided fixtures
+    - Edit `test/data/drillData.test.ts`: run `validateDrillData` over the valid Guided fixtures (with all, some, and no `why`) and expect zero issues; the library assertion still runs and still passes with founder drills that have no `why`
+    - Edit `test/data/brokenFixtures.test.ts`: each broken Why_Sentence fixture produces exactly its expected rule code and drill `id`
+    - _Requirements: 20.6, 22.1, 22.2, 22.3_
+
+  - [ ] 16.15 Write property test for the Guided verdict
+    - File `src/logic/guided.verdict.property.test.ts`; the oracle is an independent prefix check against the declared trails that does not call the Core
+    - **Property 31: A Guided verdict is prefix membership, decided by the Core**
+    - **Validates: Requirements 19.5, 19.13, 10.1, 10.11**
+
+  - [ ] 16.16 Write property tests for the Guided reducer
+    - File `src/logic/guided.flow.property.test.ts`
+    - **Property 32: A wrong pick changes nothing that was accepted**
+    - **Property 33: A correct pick appends one pick and opens the next click**
+    - **Property 34: Accepted picks are final and finished screens are frozen**
+    - **Validates: Requirements 19.6, 19.7, 19.8, 19.9, 20.3, 20.6**
+
+  - [ ] 16.17 Write property test for the Guided Method choice
+    - File `src/logic/guided.switch.property.test.ts`
+    - **Property 35: Guided Method choice follows the same rule as Timed, without a timer**
+    - **Validates: Requirements 19.10, 19.1**
+
+  - [ ] 16.18 Write property test for the end-screen rows
+    - File `src/logic/guided.rows.property.test.ts`
+    - **Property 36: Guided end rows equal the accepted path**
+    - **Validates: Requirements 21.3**
+
+  - [ ] 16.19 Write property test that Why_Sentences never change Timed
+    - File `src/logic/guided.timedUnchanged.property.test.ts`; compare `viewFlow`, `gradeAttempt`, `selectGradingInput`, `canCheck`, and the attempt reducer output on a drill with and without `why` fields
+    - **Property 38: Why sentences never change Timed**
+    - **Validates: Requirements 18.5, 20.8**
+
+  - [ ] 16.20 Write the Guided isolation test
+    - File `src/logic/guided.isolation.test.ts`: the source of `src/logic/guided.ts` imports neither `timer` nor `bestTimes`, and a fast-check property shows the reducer result depends only on the events and the drill
+    - **Property 39: Guided reads no clock and no store**
+    - **Validates: Requirements 19.1, 19.11**
+
+  - [ ] 16.21 Update the Drill_Picker tests
+    - Edit only `src/ui/DrillPicker.test.tsx`: the two buttons per drill in the order Guided then Timed; distinct accessible names that contain the visible text; one Draft badge, one moved label, and one best-time list per drill; `onOpen` receives the drill id and the right mode; change only the queries that find the drill button, and keep every other assertion
+    - _Requirements: 18.1, 18.2, 18.6, 22.7, 22.11_
+
+  - [ ] 16.22 Implement `src/ui/GuidedScreen.tsx`
+    - Find the entry as `DrillScreen` does (with the same unavailable-drill message and Back button); own `useReducer(createGuidedReducer())`; in `guiding` show the Draft rule, the question, the unchanged `MethodSelector`, `GuidedStepFlow`, and, when the path ended, an enabled "Show the full path" button that takes focus; in `finished` render `GuidedEndScreen`; post verdict announcements to the live region; no `TimerDisplay`, no Check button, no best-times context use; `onRunTimed(method)` and `onBack` go to the parent
+    - _Requirements: 19.1, 19.2, 19.4, 19.6, 19.9, 19.10, 19.11, 19.12, 19.14, 21.1, 21.6, 14.8_
+
+  - [ ] 16.23 Write component tests for the Guided step flow
+    - File `src/ui/GuidedStepFlow.test.tsx` with the Guided fixtures: a correct pick shows verdict, Why_Sentence when present (only the verdict when absent), and opens the next step; a wrong pick shows "incorrect", no Why_Sentence, no correct answer, and allows a second pick; the Keyword Why_Sentence; the Index step with a Why_Sentence on each of its two clicks; with Parts, without Parts, and the Chapter 9 table with its non-interactive Row line; the nine Chapter labels; no `NO_PARTS`; accepted picks have no Option to change
+    - _Requirements: 19.3, 19.4, 19.6, 19.7, 19.8, 19.17, 22.4_
+
+  - [ ] 16.24 Write component tests for the Guided end screen
+    - File `src/ui/GuidedEndScreen.test.tsx` with the Guided fixtures: the Keyword row and one row per accepted pick in order; the Row line only with a Table_Walk; answer, citation, hint; the sentinellearning.com link above the action buttons; both buttons call their handlers; no elapsed time, overall result, fork sentence, or moved-article message
+    - _Requirements: 21.3, 21.4, 21.5, 21.6, 21.7, 22.5_
+
+  - [ ] 16.25 Wire Guided into `App`
+    - Edit only `src/App.tsx`: split into `App` (reads the library, builds the names index, provides `NamesContext`) and an exported `AppView({ entries, buildMode })` that holds `{ drillId, mode, initialMethod }` and the screen switch, so tests can render the whole picker-to-screen wiring with fixture entries; `mode "guided"` renders `GuidedScreen`, `mode "timed"` renders `DrillScreen` with `initialMethod`; `onRunTimed(method)` sets `{ drillId, mode: "timed", initialMethod: method }`; the error boundary key includes the mode; the Shell title follows the drill label; the storage note stays on the picker only
+    - _Requirements: 18.3, 18.4, 18.8, 19.12, 21.6, 17.9_
+
+  - [ ] 16.26 Write component tests for the Guided screen
+    - File `src/ui/GuidedScreen.test.tsx` with the Guided fixtures and a spy best-times store: for both Methods a full run from the first step to "Show the full path"; no Timer and no Check button; the Method choice clears picks and keeps working with arrow-key wrap; Index Keyword Lookup offered only when `index_checked`; a pick that matches only the `movedFrom` route is "incorrect" with no moved-article message; the spy store sees zero calls
+    - _Requirements: 19.1, 19.2, 19.3, 19.9, 19.10, 19.11, 19.13, 22.4_
+
+  - [ ] 16.27 Write the app-level Guided flow test
+    - File `src/ui/App.guided.test.tsx` rendering `AppView` with fixture entries, a fake clock, and a counting `localStorage`: picker to Guided to end screen writes no item; "Run this drill Timed" opens the Drill_Screen for the same drill and Method at 2:00; a correct, checked Timed attempt then saves a best time and an incorrect one does not; "Back to drills" from each screen returns to the picker; the Switcher_Link rule and the footer text show on the Guided screen and the end screen
+    - _Requirements: 18.3, 18.4, 18.8, 19.11, 21.6, 21.8, 15.2, 15.5, 22.6_
+
+  - [ ] 16.28 Extend the accessibility and footer tests
+    - Edit `src/ui/accessibility.test.tsx` (switch its Harness to `AppView`, keep every Timed assertion) and `src/ui/Footer.test.tsx` (add the Guided screen and the end screen): Tab order and Enter or Space on the Guided screen and end screen; focus moves to the next step heading, to the second Index group, to "Show the full path", and to the end-screen heading; focus stays on the Option after an incorrect pick; exactly one `<h1>` per screen; the verdict and path-complete text reach the live region; disabled controls are natively `disabled`; the footer text is identical on both new screens
+    - _Requirements: 19.14, 19.15, 21.2, 21.9, 14.1, 14.2, 14.5, 14.8, 14.10, 15.5, 22.8_
+
+- [ ] 17. Checkpoint — Guided mode
+  - [ ] 17.1 Verify the whole repository
+    - From the repository root run `npm run verify`; it must pass for `packages/skeleton-core` and `midnight-code-hunt` (typecheck, static check, tests, build, bundle check)
+    - Confirm `git status` shows no change under `packages/skeleton-core/` and no change to `.kiro/steering/`
+    - Confirm the Timed tests still assert everything they asserted before, apart from the picker queries (Requirement 22 criterion 11); ensure all tests pass, ask the user if questions arise
+    - _Requirements: 1.5, 1.7, 18.5, 22.11_
+
+- [ ] 18. Clean-clone proof for Guided mode
+  - [ ] 18.1 Prove the repository verifies from a clean copy
+    - Copy the repository to a temp folder, excluding `node_modules`, `dist`, `dist-test-utils`, and other build output
+    - In the temp folder run `npm install` and then `npm run verify`; confirm the root command passes for both workspaces without any pre-built `packages/skeleton-core/dist/`
+    - Show the command results in the task output, then delete the temp folder
+    - _Requirements: 1.5, 1.12_
+
 ## Notes
 
 - Every sub-task is required; there are no optional `*` markers in this plan.
@@ -464,6 +614,9 @@ Content rules for every task: no drill content is written by any task (the found
 - Property test files are split one per property, a refinement of the design's file table, so tasks never share a file within a wave.
 - `bestTimeToSubmit` in `src/logic/attempt.ts` is a small pure helper added so Property 14 can be tested without rendering; the design's rule (save only from `checked` with a correct result) is unchanged.
 - If a pinned version in task 1.2 is not on the registry at install time, record the substitute exact pin here.
+- Guided (tasks 16 to 18): the Why_Sentences are founder content. No task writes one; fixtures hold made-up, marked-fictional sentences only. The founder-entered drills in `src/data/drillLibrary.ts` have no `why`, so Guided on them shows only verdicts until the founder adds sentences; the data test still passes for them.
+- Guided changes no Timed behavior. The only edits to Timed files are `types.ts` (an optional field), `DrillPicker.tsx` (two buttons), and `DrillScreen.tsx` (an optional starting Method), plus the picker queries in existing tests. `chapterForkSentence` and `articleForkSentence` are not touched and stay separate from `why`.
+- `product.md` (steering) still describes App 1 as timed drills with no beginner hand-holding. No task edits steering; the founder updates it.
 - No task changes `packages/skeleton-core`; the app resolves the Core's public `src/index.ts` through the alias in `vite.config.ts` and `tsconfig.json`.
 
 ## Task Dependency Graph
@@ -483,7 +636,15 @@ Content rules for every task: no drill content is written by any task (the found
     { "id": 9, "tasks": ["11.2", "11.5", "11.7", "13.1", "13.2"] },
     { "id": 10, "tasks": ["10.4", "10.6", "11.4"] },
     { "id": 11, "tasks": ["9.6", "11.6", "11.8", "11.9", "13.3", "13.5"] },
-    { "id": 12, "tasks": ["15.1"] }
+    { "id": 12, "tasks": ["15.1"] },
+    { "id": 13, "tasks": ["16.1", "16.2", "16.3"] },
+    { "id": 14, "tasks": ["16.4", "16.5", "16.6", "16.7", "16.8", "16.9", "16.10"] },
+    { "id": 15, "tasks": ["16.11", "16.12", "16.13", "16.14", "16.15", "16.16", "16.17", "16.18", "16.19", "16.20", "16.21"] },
+    { "id": 16, "tasks": ["16.22", "16.23", "16.24"] },
+    { "id": 17, "tasks": ["16.25", "16.26"] },
+    { "id": 18, "tasks": ["16.27", "16.28"] },
+    { "id": 19, "tasks": ["17.1"] },
+    { "id": 20, "tasks": ["18.1"] }
   ]
 }
 ```

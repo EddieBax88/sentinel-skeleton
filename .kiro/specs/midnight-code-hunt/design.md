@@ -11,6 +11,8 @@ The design rests on four ideas:
 3. **A drill has two views of one route set.** The Core `CodeTrailDef` holds the *declared valid trails* (what is correct). The app-level **Option_Tree** holds *what the user can click* (correct options plus wrong options). A data test proves the two views agree, so the tree can never offer a correct route that the Core would not grade as `matched`, and every declared trail is reachable.
 4. **No drill content is written here.** This document and its fixtures contain no real question, answer, trail, Index entry, or NEC citation. Every NEC number that appears below is an illustrative example only and is unverified until the founder confirms it against the founder's NFPA 2026 source. Fixtures are fictional and live in a test-only folder.
 
+**Guided mode (added later).** Every drill also runs in a second mode, Guided, listed before Timed. Guided has no countdown and saves no best time. After each pick the app gives a verdict at once; a correct pick shows the founder's one-sentence `why` (when the Option has one) and opens the next step; a wrong pick is refused and the same step stays open. Guided ends on its own screen with the full path, the answer, the citation, the hint, the Sentinel link, and a button that runs the same drill Timed. The design keeps Timed untouched by adding new modules beside it (`logic/guided.ts`, `ui/GuidedScreen.tsx`, `ui/GuidedStepFlow.tsx`, `ui/GuidedEndScreen.tsx`) and reusing the existing step engine, pick builder, grading selection, display-name resolver, and Method_Selector without changing them. The only edits to files Timed uses are additive: an optional `why` type field, two picker buttons, and an optional starting Method on `DrillScreen`. See "Guided mode" under Components.
+
 Constraints from the steering files that shape the design: no runtime AI, no backend, no network calls, static deploy on Vercel, Vitest plus fast-check for tests, and a Sentinel dark theme (background `#050607`, primary `oklch(0.83 0.185 88)`).
 
 ### Scope boundary
@@ -61,7 +63,8 @@ midnight-code-hunt/
 │   │   ├── timer.ts              # Clock, remainingSeconds, formatTime, parseTime, announcementFor
 │   │   ├── attempt.ts            # attempt reducer (state machine)
 │   │   ├── bestTimes.ts          # updateBest, parseStoredSeconds, createBestTimesStore
-│   │   └── switcher.ts           # parseSwitcherUrl
+│   │   ├── switcher.ts           # parseSwitcherUrl
+│   │   └── guided.ts             # Guided: judgePick, reducer, views, path rows (no timer, no storage)
 │   └── ui/
 │       ├── providers.tsx         # ClockContext, BestTimesContext, NamesContext, AnnouncerContext
 │       ├── Shell.tsx             # h1 slot, SwitcherLink, Footer, LiveRegion, Motifs
@@ -71,6 +74,9 @@ midnight-code-hunt/
 │       ├── StepFlow.tsx
 │       ├── TimerDisplay.tsx      # + useCountdown hook
 │       ├── ResultScreen.tsx
+│       ├── GuidedScreen.tsx      # Guided mode screen (renders GuidedEndScreen when finished)
+│       ├── GuidedStepFlow.tsx    # Guided step list: locked picks, verdicts, why, open step
+│       ├── GuidedEndScreen.tsx   # full path, answer, citation, hint, Sentinel link, Run Timed
 │       ├── Footer.tsx
 │       ├── SwitcherLink.tsx
 │       └── motifs/ (Moon.tsx, Bat.tsx, Cobweb.tsx)   # inline SVG
@@ -83,7 +89,7 @@ midnight-code-hunt/
     │   ├── bannedTerms.ts        # the ONLY file holding the banned-term list (excluded from scan)
     │   ├── readingLevel.ts       # Flesch-Kincaid grade + average sentence length
     │   └── contrast.ts           # WCAG ratio from oklch/hex
-    ├── fixtures/                 # fictional drills + fictional names files (never imported by non-test files in src/)
+    ├── fixtures/                 # fictional drills + fictional names files + guidedDrills.ts (why fixtures); never imported by non-test files in src/
     ├── data/drillData.test.ts    # data test over DRILL_LIBRARY and fixtures
     └── content/                  # content-scan, reading-level, token-once, contrast tests
 ```
@@ -122,7 +128,13 @@ graph TD
   attempt --> engine
   attempt --> grade
   attempt --> timer
+  guided["logic/guided"]
+  guided --> engine
+  guided --> grade
+  guided --> picks
+  guided --> disp
   ui --> attempt
+  ui --> guided
   ui --> filter
   ui --> best
   ui --> switcher
@@ -131,7 +143,7 @@ graph TD
   cfg --> filter
 ```
 
-`logic/*` modules import no React, no DOM, and no `localStorage` directly (the best-times store receives a storage object). Only `ui/*` and `config.ts` touch the DOM, `import.meta.env`, `performance`, or `window`.
+`logic/*` modules import no React, no DOM, and no `localStorage` directly (the best-times store receives a storage object). `logic/guided.ts` imports neither `timer.ts` nor `bestTimes.ts`, so Guided cannot start a timer or save a time; a test checks the imports. Only `ui/*` and `config.ts` touch the DOM, `import.meta.env`, `performance`, or `window`.
 
 ### How `@sentinel/skeleton-core` resolves
 
@@ -268,6 +280,24 @@ stateDiagram-v2
 ```
 
 `LEAVE` from `running` stores nothing: no best time is saved and no result exists (Requirement 7.8). In `checked` and `expired`, `PICK`, `SELECT_METHOD`, and `CHECK` are ignored, which disables all step choices (Requirement 7.5).
+
+### Guided state machine
+
+Guided has its own pure reducer (`logic/guided.ts`). It has no clock, no timer events, and no storage, and the Timed attempt reducer is not changed. `GuidedScreen` owns it with `useReducer`, the same way `DrillScreen` owns the attempt reducer.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> guiding: START(drill)
+  guiding --> guiding: PICK correct [append pick, feedback = correct + why]
+  guiding --> guiding: PICK incorrect [picks unchanged, feedback = incorrect]
+  guiding --> guiding: SELECT_METHOD(m) [m differs: clear picks and feedback]
+  guiding --> finished: FINISH [path ended]
+  guiding --> idle: LEAVE
+  finished --> idle: LEAVE
+```
+
+There is no expiry and no best-time effect anywhere in this machine. Leaving to run the drill Timed is a screen change in `App`, not a reducer event (see "App wiring").
 
 ---
 
@@ -749,6 +779,119 @@ export const FOOTER_DISCLAIMER =
 
 `FIXED` holds the footer, the method labels, and the nine Chapter labels. The footer string is the only copy of that text in the codebase and is compared character for character in a test.
 
+### 14. Guided mode (`src/logic/guided.ts`, `src/ui/Guided*.tsx`)
+
+#### Pure logic
+
+```typescript
+import type { DrillDef } from "@sentinel/skeleton-core";
+import type { DrillRecord, MethodId, OptionNode, TableWalk } from "../model/types";
+import type { GradeDeps } from "./grading";
+import type { CheckedNamesIndex } from "./displayName";
+import type { FlowView, StepLabel } from "./stepEngine";
+
+/** Result of judging one pick. `offered: false` means the value is not an Option at that click. */
+export type PickJudgement =
+  | { readonly offered: false }
+  | { readonly offered: true; readonly verdict: "correct" | "incorrect"; readonly node: OptionNode };
+
+/**
+ * Req 19.5. `acceptedPicks` are the values already accepted (all correct). `depth` is a click position.
+ * - depth 0 (Keyword): verdict from selectGradingInput(drill, method, value).keywordCorrect (Req 10.11).
+ * - depth > 0: path = resolvePath(tree, acceptedPicks); keyword = path[0].value;
+ *   input = { trails: selectGradingInput(drill, method, keyword).drillDef.trails } (movedFrom dropped);
+ *   picks = buildGradePicks([...path, node]); grade = deps.gradeTrail(input, picks);
+ *   n = picks.length; verdict is "correct" iff grade.stepResults has at least n entries and the
+ *   first n are all "correct".
+ * One gradeTrail call per pick at depth > 0, none at depth 0. No grading rule of its own.
+ */
+export function judgePick(
+  drill: DrillRecord,
+  method: MethodId,
+  acceptedPicks: readonly string[],
+  depth: number,
+  value: string,
+  deps?: GradeDeps,
+): PickJudgement;
+
+export type GuidedFeedback =
+  | { readonly kind: "correct"; readonly depth: number; readonly value: string; readonly why?: string }
+  | { readonly kind: "incorrect"; readonly depth: number; readonly value: string };
+
+export type GuidedState =
+  | { phase: "idle" }
+  | { phase: "guiding"; drill: DrillRecord; method: MethodId; picks: readonly string[]; feedback?: GuidedFeedback }
+  | { phase: "finished"; drill: DrillRecord; method: MethodId; picks: readonly string[] };
+
+export type GuidedEvent =
+  | { type: "START"; drill: DrillRecord }
+  | { type: "PICK"; depth: number; value: string }
+  | { type: "SELECT_METHOD"; method: MethodId }
+  | { type: "FINISH" }
+  | { type: "LEAVE" };
+
+export function createGuidedReducer(deps?: GradeDeps): (state: GuidedState, event: GuidedEvent) => GuidedState;
+```
+
+Reducer rules:
+
+- `START`: `method = defaultMethod(drill)`, `picks = []`, no feedback.
+- `PICK` (only in `guiding`): ignored unless `depth === picks.length` (an accepted pick is final, and depth past the open click is invalid) and the path has not ended. Then `judgePick`: not offered gives no change; `incorrect` leaves `picks` as they are and sets `feedback` to the wrong pick; `correct` appends `node.value` and sets `feedback` to `{ kind: "correct", why: node.why }`. A wrong pick is never stored in `picks`.
+- `SELECT_METHOD(m)`: not offered by `availableMethods(drill)` is ignored; the current Method is unchanged; a different Method sets `picks = []` and clears `feedback` (Req 19.10).
+- `FINISH`: only in `guiding` with `canCheck(treeFor(drill, method), picks)` true (the path ended); moves to `finished`.
+- `LEAVE`: back to `idle`. `finished` and `idle` ignore `PICK`, `SELECT_METHOD`, and `FINISH`.
+
+```typescript
+export type GuidedView = {
+  readonly flow: FlowView;                       // viewFlow(tree, picks, names): answered clicks plus one open click unless the path ended
+  readonly whys: readonly (string | undefined)[]; // whys[i] = why of the node picked at click i (undefined when absent)
+  readonly triedValue?: string;                  // the wrong pick at the open click, when feedback is incorrect
+  readonly feedback?: GuidedFeedback;
+  readonly pathEnded: boolean;                   // canCheck(tree, picks)
+};
+export function viewGuided(state: Extract<GuidedState, { phase: "guiding" }>, names: CheckedNamesIndex): GuidedView;
+
+export type PathRow =
+  | { readonly kind: "keyword"; readonly pickText: string }
+  | { readonly kind: "step"; readonly label: StepLabel; readonly level: string; readonly pickText: string }
+  | { readonly kind: "row-line"; readonly tableWalk: TableWalk };
+
+/** Req 21.3: Keyword row, one row per accepted pick in click order, then the Row line when the drill has a tableWalk. pickText from resolveDisplay. */
+export function guidedPathRows(
+  drill: DrillRecord, method: MethodId, picks: readonly string[], names: CheckedNamesIndex,
+): readonly PathRow[];
+```
+
+`viewGuided` reuses `viewFlow` and `resolvePath` unchanged. A picked node's `why` is read from the resolved path, so a Why_Sentence is shown only for an accepted pick and never for a wrong one.
+
+Why `gradeTrail` and not the node `role`: `role` would be a second source of truth about correctness. Calling the Core keeps Requirement 10 criterion 1 true ("the Core grades"), and Property 31 proves it agrees with an independent prefix check. The data test already guarantees the tree and the declared trails agree, so on valid data the two give the same answer.
+
+#### Components
+
+| Component | Props / source | Behavior |
+|---|---|---|
+| `GuidedScreen` | `drillId`, `entries`, `buildMode`, `onBack`, `onRunTimed(method)` | Finds the entry as `DrillScreen` does. Owns `useReducer(createGuidedReducer())`. In `guiding`: Draft badge rule, the `question`, `MethodSelector` (unchanged component), `GuidedStepFlow`, and, when `pathEnded`, the "Show the full path" button. In `finished`: `GuidedEndScreen`. No `TimerDisplay`, no Check button, no best-times context use. Posts verdict announcements to the live region. |
+| `GuidedStepFlow` | `GuidedView`, `onPick(depth, value)` | One `<section>` and `<h2>` per labeled step, same headings as `StepFlow`. An answered click shows only the accepted pick with a check mark, the text "correct", and its Why_Sentence when present (plain text). The open click shows its Options as buttons, all enabled; the tried wrong Option carries a text marker. The newest verdict is a text line with a marker (`role="status"` not used; the shared live region announces it). The Index step is one heading with two ordered groups, as in `StepFlow`. Rows are never re-offered once accepted. |
+| `GuidedEndScreen` | `drill`, `method`, `picks`, `onRunTimed`, `onBack` | Shell `<h1>` focused on mount (same effect `ResultScreen` uses). Path rows from `guidedPathRows`, the answer and citation, the hint, the `https://sentinellearning.com` link above the buttons, then "Run this drill Timed" and "Back to drills". Posts the path-complete announcement. No timer, elapsed time, overall result, fork sentence, or moved-article message. |
+| `DrillPicker` (changed) | `onOpen(drillId, mode)` | Each drill row keeps one label, one Draft badge, one moved label, and one best-time list, and gains two buttons: "Guided" first, "Timed" second. Accessible name of each button includes the drill label (for example through `aria-labelledby` with the label's id and the button's own id). |
+| `DrillScreen` (changed, additive) | optional `initialMethod?: MethodId` | When set and offered, the initial state is `START` followed by `SELECT_METHOD(initialMethod)` in the lazy initializer. When absent, nothing changes. The Timer starts at the `START` reading, so the user sees 2:00. |
+
+#### App wiring
+
+`App` keeps `{ drillId, mode, initialMethod }` (mode is `"guided"` or `"timed"`) instead of a bare `drillId`. The picker calls `onOpen(drillId, mode)`. `mode === "guided"` renders `GuidedScreen`; `mode === "timed"` renders `DrillScreen` with `initialMethod`. `onRunTimed(method)` sets `{ drillId, mode: "timed", initialMethod: method }`, which remounts as a fresh Timed attempt (error boundary key `${mode}:${drillId}`). `onBack` clears all three. The Shell title follows the open drill's label as today.
+
+#### Focus and announcements
+
+| Event | Focus target | Announcement |
+|---|---|---|
+| Correct pick, next step opens | the new step's `<h2>`, or the second Index group (same effect as `StepFlow`, keyed on the click count) | verdict, then the Why_Sentence when present |
+| Correct pick, path ends | the "Show the full path" button | verdict, then the Why_Sentence when present |
+| Incorrect pick | stays on the activated Option | "incorrect" and the pick-again sentence |
+| Method switch | heading of the first step of the new Method | none |
+| `GuidedEndScreen` mounts | its `<h1>` | the path-complete text |
+
+Strings for all of this are defined up front in `src/copy/strings.ts` (PROSE for sentences, FIXED for the labels "Guided", "Timed", "Show the full path", "Run this drill Timed"). No string holds a step count or a progress counter.
+
 ---
 
 ## Data Models
@@ -774,6 +917,11 @@ type NodeBase = {
   /** Key into the Checked_Names_File of the node's edition. */
   readonly nameKey?: string;
   readonly role: OptionRole;
+  /**
+   * Founder content. One plain sentence, 1-300 chars, shown only in Guided after a correct pick.
+   * Allowed only on role "correct". Optional on every level, Keyword included. Not a fork sentence.
+   */
+  readonly why?: string;
   /** The next level's options. Absent means the path ends here. */
   readonly next?: NonEmpty<OptionNode>;
 };
@@ -815,6 +963,7 @@ Design choices behind the types:
 - **Wrong options share the node list with correct options.** Each level's options are one array; `role` separates correct from wrong. A level may hold 0 to 6 `wrong` nodes (Requirement 2.5) and any number of `correct` nodes (one per valid trail that passes through that position). The Keyword level follows the same rule.
 - **Level lives on the node, not the container**, so the has-Parts marker can be a required field on exactly the Article variant. The data test checks that all siblings share one level.
 - **`next` absent means the path ends.** The type `NonEmpty` forbids an empty `next` (Requirement 17.9).
+- **`why` lives on the Option, not on the trail.** The Core `CodeTrailDef` cannot change, and a node already is one step of one route, so one optional sentence per node is one optional sentence per trail step (the Keyword node, each Index click, each Section, the Table). Two trails of one Method that share a node share its sentence. Wrong, `moved`, and generated Chapter nodes carry none.
 - **A decoy may branch.** A wrong Article with `hasParts: true` has a `next` list of `part` nodes (all `wrong`), so the user sees a Part step after picking it. Picking a Part there on a part-less trail is the only way a `part` pick reaches `gradeTrail`, and the Core grades it as a misfire.
 - **`moved` role:** the movedFrom (2023) route needs clickable options. A node on that route that is not also a valid-trail node has role `moved` and resolves names from the 2023 file. If a movedFrom step equals a valid-trail step at the same position, the single node keeps role `correct` and uses the 2026 file.
 - **Index tree presence** follows `index_checked`: `trees.index` is present exactly when `index_checked` is true. When it is false, the drill has no Index trail and no Index tree, so no Index entry, heading word, or route step can reach the screen (Requirement 6.4).
@@ -926,8 +1075,11 @@ Pure and total: it returns every issue; it never throws. It is used only by test
 | R-none | no node value normalizes to `none` (the Core's `NO_PARTS`), so a pick can never be `NO_PARTS` | 9.7 |
 | R6.4 | `trees.index` present iff `index_checked`; no Index trail when `index_checked` is false | 6.4 |
 | R-chapter | chapter-level node values have `extractFirstNumber` in 1 to 9 and are unique by number | 9.8 |
+| R20.2-length | where `why` is present it is a string of 1 to 300 characters after trimming, on every node of both trees, Keyword nodes included | 20.2 |
+| R20.2-sentence | where `why` is present it holds exactly one sentence (the same test the fork sentences use) | 20.2 |
+| R20.4-role | `why` appears only on a node whose `role` is `correct`; a `wrong` or `moved` node with `why` is an issue naming the drill `id` and the node | 20.4 |
 
-The data test runs the validator over `DRILL_LIBRARY` and over the fixtures. When the library is empty, the library run reports zero issues and the fixture run still exercises every rule (Requirement 17.20). It runs whatever the value of `founder_checked` (Requirement 4.8).
+A drill with no `why` anywhere passes all three Why_Sentence rules (Requirement 20 criterion 6). The data test runs the validator over `DRILL_LIBRARY` and over the fixtures. When the library is empty, the library run reports zero issues and the fixture run still exercises every rule (Requirement 17.20). It runs whatever the value of `founder_checked` (Requirement 4.8).
 
 ---
 
@@ -1119,6 +1271,60 @@ Reflection on the prework: it produced these candidates, and the following were 
 
 **Validates: Requirements 2.5, 9.8**
 
+### Property 31: A Guided verdict is prefix membership, decided by the Core
+
+*For any* valid drill, Method, accepted correct prefix, and Option offered at the next click: `judgePick` returns `correct` if and only if the accepted picks plus that pick are a prefix of the keyword and flattened steps of some declared valid trail of that Method (compared after `trim().toLowerCase()`), checked against an independent oracle that does not call the Core. At depth 0 the verdict is correct if and only if the value matches the keyword of some valid trail of the Method. `movedFrom` never makes a pick correct.
+
+**Validates: Requirements 19.5, 19.13, 10.1, 10.11**
+
+### Property 32: A wrong pick changes nothing that was accepted
+
+*For any* guiding state and any offered Option whose verdict is incorrect: `PICK` leaves `picks` and `method` unchanged, sets `feedback` to an incorrect entry for that pick, keeps the same click open, and a second identical wrong pick leaves the state equal to the first result. No Why_Sentence is in the feedback.
+
+**Validates: Requirements 19.7**
+
+### Property 33: A correct pick appends one pick and opens the next click
+
+*For any* guiding state and any offered Option whose verdict is correct: `PICK` appends exactly that Option's value, sets `feedback` to a correct entry whose `why` equals the Option's `why` (absent when the Option has none), and `pathEnded` is true if and only if the Option has no next level. *For any* declared valid trail, feeding its Keyword and steps in order through the reducer ends with `pathEnded` true, every verdict correct, and a Core `gradeTrail` result with `matched` true for the accepted picks.
+
+**Validates: Requirements 19.6, 19.9, 20.3, 20.6**
+
+### Property 34: Accepted picks are final and finished screens are frozen
+
+*For any* guiding state with `n` accepted picks: `PICK` at any depth other than `n` leaves the state unchanged; after the path has ended `PICK` leaves the state unchanged; `FINISH` before the path ends leaves the state unchanged; in `finished` and `idle`, `PICK`, `SELECT_METHOD`, and `FINISH` leave the state unchanged.
+
+**Validates: Requirements 19.8, 19.9**
+
+### Property 35: Guided Method choice follows the same rule as Timed, without a timer
+
+*For any* guiding state and any Method `m`: choosing a Method that differs from the current one sets `picks` to empty and clears `feedback`; choosing the current Method leaves the whole state unchanged; choosing a Method the drill does not offer leaves the state unchanged. The state holds no time field.
+
+**Validates: Requirements 19.10, 19.1**
+
+### Property 36: Guided end rows equal the accepted path
+
+*For any* finished state: `guidedPathRows` returns a Keyword row first, then exactly one step row per remaining accepted pick in click order with levels equal to the resolved nodes' levels (the two Index clicks are two rows), then a Row line if and only if the drill has a `tableWalk`; each `pickText` equals `resolveDisplay` of its node.
+
+**Validates: Requirements 21.3**
+
+### Property 37: Why sentences are optional and validated
+
+*For any* generated valid drill, giving any subset of its `correct` nodes (the Keyword nodes included) a one-sentence `why` of 1 to 300 characters yields no validator issue, and so does removing every `why`. Adding a `why` that is empty, over 300 characters, or two sentences, or putting any `why` on a `wrong` or `moved` node, yields an issue that names the drill `id`.
+
+**Validates: Requirements 20.2, 20.4, 20.6, 22.1**
+
+### Property 38: Why sentences never change Timed
+
+*For any* generated drill, picks, and method: adding, changing, or removing `why` fields leaves the output of `viewFlow`, `gradeAttempt`, `selectGradingInput`, `canCheck`, and the attempt reducer unchanged. This is the regression guard for "Timed changes nothing" (Requirement 18 criterion 5).
+
+**Validates: Requirements 18.5, 20.8**
+
+### Property 39: Guided reads no clock and no store
+
+*For any* sequence of Guided events on a generated drill, the reducer result depends only on the events and the drill. A source-level test also asserts that `logic/guided.ts` imports neither `timer` nor `bestTimes`, and a component test with a counting `localStorage` and a spy store asserts zero reads and writes across a whole Guided run (this half is an example test, not a property).
+
+**Validates: Requirements 19.1, 19.11, 21.8**
+
 ---
 
 ## Error Handling
@@ -1139,6 +1345,12 @@ Reflection on the prework: it produced these candidates, and the following were 
 | Picks go past the end of the graded trail | row builder sees picks beyond the Core rows | Extra rows are shown as incorrect | 10.5 |
 | `selectGradingInput` finds no trail for a method (corrupt data) | `InvariantError` thrown | The data test prevents this for real data. At runtime the error boundary shows a short "this drill is not available" message with a "Back to drills" button | 17.9 |
 | Build mode other than `production` in a deployed build | `getBuildMode` returns production whenever `PROD` is true | Drafts are never shown on a production build | 4.2 |
+| Guided pick that is not an Option at the open click, at a locked depth, or after the path ended | `judgePick` returns `offered: false`, or the reducer's depth guard | Silent no-op; state does not change | 19.8 |
+| Guided pick is incorrect | `judgePick` verdict | The pick is not stored, the verdict "incorrect" and the pick-again sentence show, no Why_Sentence, the same step stays open | 19.7 |
+| Option has no `why` | `node.why` is undefined | Only the Guided_Verdict shows for that step; no placeholder text | 20.6 |
+| Drill data has `why` on a `wrong` or `moved` node, or a bad `why` | validator rules R20.2 and R20.4 | The data test fails with the drill `id`; at runtime Guided never reads `why` from a wrong node because wrong picks are never accepted | 20.2, 20.4 |
+| `selectGradingInput` finds no trail for a Method in Guided (corrupt data) | `InvariantError` thrown inside `judgePick` | The same error boundary as Timed shows "this drill is not available" with "Back to drills" | 17.9 |
+| `localStorage` unavailable while Guided runs | Guided does not use it | No effect on Guided; the storage note on the picker is unchanged | 19.11 |
 | Banned term, network call, or deep Core import added to source | `check-static` and the content scan test | `verify` exits non-zero and prints the file path and the match | 1.11, 16.13 |
 
 ---
@@ -1176,6 +1388,13 @@ Property tests are not used for: React rendering and Tailwind layout (component 
 | 21, 22, 23, 24, 25 | `src/logic/grading.test.ts` |
 | 26, 30 | `test/data/drillData.property.test.ts` |
 | 29 | `src/logic/switcher.test.ts` |
+| 31 | `src/logic/guided.verdict.property.test.ts` |
+| 32, 33, 34 | `src/logic/guided.flow.property.test.ts` |
+| 35 | `src/logic/guided.switch.property.test.ts` |
+| 36 | `src/logic/guided.rows.property.test.ts` |
+| 37 | `test/data/drillData.why.property.test.ts` |
+| 38 | `src/logic/guided.timedUnchanged.property.test.ts` |
+| 39 | `src/logic/guided.isolation.test.ts` (source import check plus the reducer-purity property) |
 
 ### Data test (`test/data/drillData.test.ts`)
 
@@ -1192,6 +1411,11 @@ All use fixture drills and a fake clock supplied through `ClockContext`.
 - Grading flow: correct Keyword_Pick with wrong path; wrong Keyword_Pick with matching path (incorrect, no best time written); `movedFrom` only under Table of Contents Lookup; synthetic Part row shown incorrect (Requirement 17.14).
 - `ResultScreen`: elapsed time, Keyword row, per-step verdicts with text labels, answer and citation, hint, the `https://sentinellearning.com` link, fork sentences on their rows only when present, Table_Walk on the Row line, and the moved-article message with the `editionNote` (Requirement 17.15).
 - `DrillPicker`: lists filtered drills, best times per method, the moved label, the "Draft" text badge in test mode and none in production, the empty-library message (Requirement 17.16).
+- `GuidedStepFlow` and `GuidedScreen` (fixtures `test/fixtures/guidedDrills.ts`): for both Methods, a correct pick shows verdict, Why_Sentence when present (and only the verdict when absent), and the next step; a wrong pick shows "incorrect", no Why_Sentence, no correct answer, keeps the step open and allows a second pick; the Keyword step's Why_Sentence; the Index step with a Why_Sentence on each of its two clicks; with Parts, without Parts, and the Chapter 9 table; accepted picks cannot be changed; Method choice clears picks, arrow keys wrap; the last correct pick shows verdict, Why_Sentence, and "Show the full path"; no Timer and no Check button (Requirements 22.4).
+- `GuidedEndScreen`: path rows, Row line only with a Table_Walk, answer, citation, hint, the Sentinel link above the buttons, "Run this drill Timed" opens the Drill_Screen for the same drill and Method at 2:00, "Back to drills", and no elapsed time, overall result, fork sentence, or moved-article message (22.5).
+- App level: picker to Guided to end screen to Timed, with a counting `localStorage` proving Guided writes nothing and Timed still saves a best time only for a correct, checked attempt (22.6).
+- `DrillPicker`: two buttons per drill, Guided then Timed, distinct accessible names, one Draft badge and one best-time list per drill (22.7).
+- Existing Timed component tests keep every Timed assertion; only the queries that open a drill from the picker change (22.11).
 - `SwitcherLink` and `Footer`: the link for set, unset, and invalid values; the footer text equals `FOOTER_DISCLAIMER` and that constant equals the required string character for character, on all three screens (Requirement 17.17).
 - Fixtures with two valid trails of one method (Requirement 17.21): Keyword_Pick matching either keyword shows a correct Keyword row; keyword of trail A with the steps of trail B shows an incorrect overall result and saves no best time; keyword and steps of one trail show a correct overall result; a Keyword_Pick equal to the `movedFrom` keyword only shows an incorrect Keyword row and no moved-article message.
 - Focus and accessibility: focus moves to the next step heading and to the Result heading; each screen has exactly one `<h1>`; `<html lang="en">`; disabled controls are natively `disabled` and so leave the tab order; accessible names contain the visible text.
@@ -1244,3 +1468,11 @@ Items where a requirement was hard to meet as written, was unclear, or meets the
 | 15 | 16.9 | The reading-level lower bound (grade 5) cannot be tested, and the required footer and labels are not plain-language prose. | The test enforces grade 7.0 or lower and a 15-word average on `PROSE`; `FIXED` strings are exempt. |
 | 16 | 1.9 / 1.10 | Vite's default preload helper contains a `fetch` call. | Disabled with `build.modulePreload.polyfill = false`; `check-static` scans `src/` as required, and `dist/` is checked only for `fast-check`. |
 | 17 | 7.3 | "Within 1 second" depends on polling. | The countdown polls every 250 ms and computes from the monotonic reading, so any display lag is under 1 second. |
+| 18 | Guided / fork fields | Should `chapterForkSentence` and `articleForkSentence` become part of the Why_Sentence? | No: they stay separate. They are one sentence per drill that compares sibling Options and shows on the Timed Result_Screen, so merging would change Timed. A `why` is one sentence per trail step and shows in Guided. Using a fork sentence as a fallback `why` would break "a step with no sentence shows only the verdict". The founder may have to write similar text twice for the Chapter and Article steps; retiring the fork fields is a later, separate decision. |
+| 19 | Guided / 8.14 | Req 8.14 bars explaining a keyword switch, but the Keyword step now has an optional founder `why`. | The app generates no explanation; the founder's sentence is the only possible one, and only in Guided. |
+| 20 | Guided / 10.1 | Per-pick verdicts need grading before the path is complete. | One `gradeTrail` call per pick on the same-keyword trails with the accepted picks plus the new one. Correct means the first N verdicts are all correct, which is the same as "prefix of a valid trail", and holds with ties between trails (a trail with N matches has matched every pick). |
+| 21 | Guided / data | Two trails that share a node share its `why`; a different reason for the same node on two trails is not expressible. | Accepted for now; no drill needs it. If one does, a trail-keyed override can be added later without changing the Core. |
+| 22 | Guided / `movedFrom` | A 2023-route pick in Guided is plain "incorrect". | Chosen to keep scope small. A moved-article message is an additive later change. |
+| 23 | Guided / tests | The picker entry changes from one button to two, so the existing tests that click the drill button need a new query. | Only the query changes; no Timed assertion changes (Req 22.11). |
+| 24 | Guided / steering | `product.md` still says App 1 is timed drills with no beginner hand-holding. | Not edited here. The founder updates the steering text. |
+| 25 | Guided / copy | The reason for Guided (new learners do better guided first) is the founder's rationale. | It lives in this spec only. UI copy makes no learning-outcome claim, no numeric figure, and no pass promise. |
